@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"baseURL\\\\|route\\(\\\\|mock\\\\|intercept\" /workspaces/studio/tests --include=*.ts)",
+      "Bash(grep -E \"\\\\.\\(json|yaml|yml\\)$\")"
+    ]
+  }
+}

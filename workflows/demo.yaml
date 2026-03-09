@@ -1,0 +1,23 @@
+document:
+  dsl: 1.0.0
+  taskQueue: zigflow
+  workflowType: demo
+  version: 0.0.1
+  title: demo
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      properties: {}
+do:
+  - demo:
+      do:
+        - set-variables:
+            set:
+              hello: world
+        - http-call:
+            call: http
+            with:
+              method: get
+              endpoint: https://zigflow.dev/schema.yaml

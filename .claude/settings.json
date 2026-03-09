@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"_initialWorkflowId\\\\|selectedWorkflowId\\\\|workflowOrder\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -n \"nodeClick\\\\|onNodeClick\\\\|handleNodeSelect\\\\|svelte-flow.*click\\\\|flowClick\\\\|handleClick\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -n \"currentGraph\\\\|getGraphAtPath\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -n \"$effect\\\\|markDirty\\\\|scheduleSave\\\\|doSave\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -n \"selectedSegments\\\\|handleSave\\\\b\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -rn \"getByTestId\\(''''save-status''''\\).getByText\" /workspaces/studio/tests/*.spec.ts)",
+      "Bash(python3 -c \":*)",
+      "Bash(npx prettier:*)",
+      "Bash(grep -l \"WORKFLOW = ''/workflows/\" /workspaces/studio/tests/*.spec.ts)",
+      "Bash(grep \"WORKFLOW = \" /workspaces/studio/tests/*.spec.ts)",
+      "Bash(xargs ls:*)",
+      "Read(//tmp/claude-1000/-workspaces-studio/**)",
+      "Bash(grep -n \"editor-topbar\\\\|flex-shrink\\\\|editor-layout\\\\|overflow\\\\|position\" /workspaces/studio/src/routes/workflows/[...workflowId]/+page.svelte)",
+      "Bash(grep -n \"fitView\\\\|visibility\\\\|onMount\\\\|$effect\\\\|viewport\" /workspaces/studio/src/lib/ui/Canvas.svelte)",
+      "Bash(grep -n \"fitView\\\\|visibility\\\\|SvelteFlow\\\\|onMount\\\\|$effect\" /workspaces/studio/src/lib/ui/Canvas.svelte)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s --connect-timeout 2 http://localhost:5173/)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(xargs cat:*)",
+      "Bash(curl -v http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5173/)",
+      "Bash(find /workspaces/studio/node_modules/@xyflow/svelte/dist -name *.css)",
+      "Bash(grep minZoom.*0. /workspaces/studio/node_modules/@xyflow/svelte/dist/lib/store/index.js)",
+      "Bash(node -e \"const sys = require\\(''''/workspaces/studio/node_modules/@xyflow/system/dist/esm/index.js''''\\); console.log\\(Object.keys\\(sys\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''''initial''''\\) || k.toLowerCase\\(\\).includes\\(''''default''''\\)\\)\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(grep -rn fitView /workspaces/studio/node_modules/@xyflow/svelte/dist/lib/container/SvelteFlow/*.svelte)",
+      "Bash(find /workspaces/studio/src/routes/workflows/[workflowId] -type f)",
+      "Bash(pre-commit run:*)",
+      "Bash(npm run:*)",
+      "Bash(npx playwright:*)"
+    ],
+    "additionalDirectories": [
+      "/workspaces/studio/src/routes/workflows/[...workflowId]"
+    ]
+  }
+}

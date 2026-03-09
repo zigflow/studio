@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "temporalDocs": {
+      "type": "http",
+      "url": "https://temporal.mcp.kapa.ai"
+    },
+    "zigflow": {
+      "type": "http",
+      "url": "https://mcp.zigflow.dev"
+    }
+  }
+}

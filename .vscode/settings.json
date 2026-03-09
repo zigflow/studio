@@ -1,0 +1,32 @@
+{
+  "editor.formatOnSave": true,
+  "editor.rulers": [
+    80
+  ],
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": [
+      ".github/workflows/*.{yml,yaml}"
+    ],
+    "https://zigflow.dev/schema.yaml": [
+      "workflow.example.yaml",
+      "workflow.yaml",
+      "zigflow.yaml",
+      "workflows/*.yaml"
+    ]
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
