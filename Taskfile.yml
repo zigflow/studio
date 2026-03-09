@@ -1,0 +1,59 @@
+version: '3'
+
+vars:
+  TMP_IMG: ttl.sh/zigflow-studio
+  TMP_IMG_TAG: 24h
+
+tasks:
+  commitlint:
+    desc: Run commitlint
+    cmds:
+      - npx commitlint --version
+      - npx commitlint --to HEAD
+
+  cruft-update:
+    desc: Check/update cruft template
+    cmds:
+      - |
+        if [ ! -f .cruft.json ]; then
+          echo "Cruft not configured"
+        else
+          cruft check || cruft update --skip-apply-ask --refresh-private-variables
+        fi
+
+  helm-img:
+    desc: Build and push temporary Helm image
+    cmds:
+      - docker build -t {{.TMP_IMG}}:{{.TMP_IMG_TAG}} .
+      - docker push {{.TMP_IMG}}:{{.TMP_IMG_TAG}}
+
+  helm:
+    desc: Deploy Helm chart locally
+    cmds:
+      - touch values.example.yaml
+      - |
+        helm upgrade \
+          --cleanup-on-fail \
+          --create-namespace \
+          --install \
+          --namespace zigflow \
+          --reset-values \
+          --rollback-on-failure \
+          --set image.pullPolicy=Always \
+          --set image.repository={{.TMP_IMG}} \
+          --set image.tag={{.TMP_IMG_TAG}} \
+          --values ./values.example.yaml \
+          --wait \
+          zigflow ./charts/studio
+
+  minikube:
+    desc: Start minikube and apply dev manifests
+    cmds:
+      - |
+        minikube profile list | grep minikube | grep OK || minikube start
+
+  scan:
+    desc: Scan for vulnerabilities
+    cmds:
+      - trivy config --severity HIGH,CRITICAL --format table --exit-code 1 charts/studio
+      - trivy image --severity HIGH,CRITICAL --format table --exit-code 1 --pkg-types os,library --ignore-unfixed ghcr.io/zigflow/studio

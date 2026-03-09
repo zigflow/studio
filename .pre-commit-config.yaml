@@ -1,0 +1,57 @@
+repos:
+  - repo: https://github.com/mrsimonemms/pre-commit-hooks
+    rev: v1.2.1
+    hooks:
+      - id: license-eye
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: pretty-format-json
+        args:
+          - --autofix
+          - --no-sort-keys
+          - --no-ensure-ascii
+      - id: check-json
+      - id: check-yaml
+        exclude: charts
+        args:
+          - --allow-multiple-documents
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages:
+          - commit-msg
+  - repo: https://github.com/trussworks/pre-commit-hooks
+    rev: v2.0.0
+    hooks:
+      - id: markdown-toc
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.21.0
+    hooks:
+      - id: markdownlint-cli2
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v10.0.3
+    hooks:
+      - id: eslint
+        files: \.([jt]sx?|svelte)$ # *.js, *.jsx *.ts, *.tsx and *.svelte
+        types: [file]
+  - repo: https://github.com/mrsimonemms/toodaloo
+    rev: v0.2.4
+    hooks:
+      - id: scan
+  - repo: local
+    hooks:
+      - id: format
+        name: Format code
+        language: unsupported
+        entry: npm run format
+  - repo: https://github.com/norwoodj/helm-docs
+    rev: v1.14.2
+    hooks:
+      - id: helm-docs-built
+        args:
+          - --template-files=./charts/zigflow/README.tpl
+exclude: charts/.*/README.md

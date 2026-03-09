@@ -1,0 +1,48 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: studio
+
+build:
+  artifacts:
+    - image: studio
+      docker:
+        dockerfile: Dockerfile
+        target: dev
+      sync:
+        manual:
+          - src: "src/**/*"
+            dest: /home/node/app
+          - src: "static/**/*"
+            dest: /home/node/app
+  local:
+    push: false
+    useBuildkit: true
+
+deploy:
+  helm:
+    releases:
+      - name: studio
+        chartPath: charts/studio
+        namespace: zigflow
+        createNamespace: true
+        setValueTemplates:
+          image.repository: "{{.IMAGE_REPO_studio}}"
+          image.tag: "{{.IMAGE_TAG_studio}}"
+        setValues:
+          image:
+            pullPolicy: Never
+          securityContext:
+            readOnlyRootFilesystem: false
+
+portForward:
+  - resourceType: Service
+    resourceName: studio
+    namespace: zigflow
+    port: 3000
+    localPort: 3000
+
+profiles:
+  - name: minikube
+    activation:
+      - kubeContext: minikube
