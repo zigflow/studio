@@ -1,0 +1,27 @@
+{
+  "features": {
+    "ghcr.io/devcontainers-extra/features/temporal-cli:1": {
+      "version": "1.0.7",
+      "resolved": "ghcr.io/devcontainers-extra/features/temporal-cli@sha256:275980d00e6e4d291d1e71a7f94a7d4c70e4d0cb82e3a7e0db04a6b3b0390761",
+      "integrity": "sha256:275980d00e6e4d291d1e71a7f94a7d4c70e4d0cb82e3a7e0db04a6b3b0390761"
+    },
+    "ghcr.io/guiyomh/features/goreleaser:0": {
+      "version": "0.1.1",
+      "resolved": "ghcr.io/guiyomh/features/goreleaser@sha256:eba46940bb2064c6595f0d724b6fbf9f880a23306f2be65de6555173d7ff7c92",
+      "integrity": "sha256:eba46940bb2064c6595f0d724b6fbf9f880a23306f2be65de6555173d7ff7c92"
+    },
+    "ghcr.io/mrsimonemms/devcontainers/cobra-cli:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/mrsimonemms/devcontainers/cobra-cli@sha256:e5f61d4c00e066815dc98ce8f949aeded739b97f8f69c234ba33d1f07be8c081",
+      "integrity": "sha256:e5f61d4c00e066815dc98ce8f949aeded739b97f8f69c234ba33d1f07be8c081"
+    },
+    "ghcr.io/mrsimonemms/devcontainers/zigflow:1": {
+      "version": "1.0.1",
+      "resolved": "ghcr.io/mrsimonemms/devcontainers/zigflow@sha256:dcf2fa24bb27c005a57faa84e3938cd3692caa806ae71e37a5c093904785a6a4",
+      "integrity": "sha256:dcf2fa24bb27c005a57faa84e3938cd3692caa806ae71e37a5c093904785a6a4",
+      "dependsOn": [
+        "ghcr.io/devcontainers-extra/features/temporal-cli:1"
+      ]
+    }
+  }
+}

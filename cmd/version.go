@@ -1,0 +1,43 @@
+/*
+ * Copyright 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package cmd
+
+import (
+	"fmt"
+
+	gh "github.com/mrsimonemms/golang-helpers"
+	"github.com/spf13/cobra"
+)
+
+var (
+	GitCommit = ""
+	Version   = gh.Development
+)
+
+func newVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Displays version information",
+		Long: `Print version information for the application.
+
+The output includes the version number and Git commit hash used to build the
+binary, which can be helpful for debugging and support purposes.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("Version: %s\nGit commit: %s\n", Version, GitCommit)
+		},
+	}
+}

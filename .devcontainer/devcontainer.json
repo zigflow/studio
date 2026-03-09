@@ -1,0 +1,25 @@
+{
+  "name": "devcontainer",
+  "image": "ghcr.io/mrsimonemms/devcontainers/full",
+  "features": {
+    "ghcr.io/mrsimonemms/devcontainers/cobra-cli:1": {},
+    "ghcr.io/guiyomh/features/goreleaser:0": {},
+    "ghcr.io/devcontainers-extra/features/temporal-cli:1": {},
+    "ghcr.io/mrsimonemms/devcontainers/zigflow:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [],
+      "settings": {}
+    }
+  },
+  "postCreateCommand": {
+    "bootstrap": "ln -s $PWD/.cobra.yaml $HOME/.cobra.yaml && if [ ! -f \"go.mod\" ]; then go mod init \"github.com/zigflow/studio\"; fi && if [ ! -f \"main.go\" ]; then cobra-cli init && go mod tidy; fi"
+  },
+  "containerEnv": {
+    "GIT_REPO": "github.com/zigflow/studio"
+  },
+  "forwardPorts": [
+    8233
+  ]
+}
