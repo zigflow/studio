@@ -1,4 +1,4 @@
-# ui
+# studio
 
 ![Version: 0.0.0](https://img.shields.io/badge/Version-0.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
@@ -14,7 +14,7 @@ Web UI for visualising and editing Zigflow workflows
 
 ## Source Code
 
-* <https://github.com/zigflow/ui>
+* <https://github.com/zigflow/studio>
 
 ## Values
 
@@ -29,7 +29,7 @@ Web UI for visualising and editing Zigflow workflows
 | envvars | list | `[]` | Additional environment variables |
 | fullnameOverride | string | `""` | String to fully override names |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| image.repository | string | `"ghcr.io/zigflow/ui"` | Image repository |
+| image.repository | string | `"ghcr.io/zigflow/studio"` | Image repository |
 | image.tag | string | `""` | Image tag - defaults to the chart's <code>Version</code> if not set |
 | imagePullSecrets | list | `[]` | Docker registry secret names |
 | livenessProbe.httpGet.path | string | `"/"` | Path to demonstrate app liveness |

@@ -1,5 +1,5 @@
 {
-  "name": "@zigflow/ui",
+  "name": "@zigflow/studio",
   "description": "A drag and drop UI for building Temporal workflows",
   "private": true,
   "license": "Apache-2.0",

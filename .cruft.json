@@ -4,9 +4,9 @@
   "checkout": "main",
   "context": {
     "cookiecutter": {
-      "project_name": "ui",
+      "project_name": "studio",
       "description": "A drag and drop UI for building Temporal workflows",
-      "author": "Zigflow authors <https://github.com/zigflow/ui/graphs/contributors>",
+      "author": "Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>",
       "type": "svelte",
       "_template": "https://github.com/mrsimonemms/new",
       "_commit": "575419a2c0d81d09e68c8a42d027c32b138f1b71"

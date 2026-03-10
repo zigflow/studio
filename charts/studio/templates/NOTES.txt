@@ -1,5 +1,5 @@
 Deployed
 ========
 
-App: {{ include "ui.fullname" . }}
+App: {{ include "studio.fullname" . }}
 Namespace: {{ .Release.Namespace }}

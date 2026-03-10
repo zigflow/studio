@@ -1,11 +1,11 @@
 apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
-  name: ui
+  name: studio
 
 build:
   artifacts:
-    - image: ui
+    - image: studio
       docker:
         dockerfile: Dockerfile
         target: dev
@@ -22,13 +22,13 @@ build:
 deploy:
   helm:
     releases:
-      - name: ui
-        chartPath: charts/ui
+      - name: studio
+        chartPath: charts/studio
         namespace: zigflow
         createNamespace: true
         setValueTemplates:
-          image.repository: "{{.IMAGE_REPO_ui}}"
-          image.tag: "{{.IMAGE_TAG_ui}}"
+          image.repository: "{{.IMAGE_REPO_studio}}"
+          image.tag: "{{.IMAGE_TAG_studio}}"
         setValues:
           image:
             pullPolicy: Never
@@ -37,7 +37,7 @@ deploy:
 
 portForward:
   - resourceType: Service
-    resourceName: ui
+    resourceName: studio
     namespace: zigflow
     port: 3000
     localPort: 3000

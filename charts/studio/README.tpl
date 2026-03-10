@@ -1,5 +1,5 @@
 {*
- Copyright 2025 - 2026 Zigflow authors <https://github.com/zigflow/ui/graphs/contributors>
+ Copyright 2025 - 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  limitations under the License.
 *}
 
-# Zigflow UI
+# Zigflow Studio
 
 {{ template "chart.deprecationWarning" . }}
 
-[![Version](https://img.shields.io/github/v/release/zigflow/ui?label=Version&color=007ec6)](https://github.com/zigflow/ui/tree/main/charts/ui)
+[![Version](https://img.shields.io/github/v/release/zigflow/studio?label=Version&color=007ec6)](https://github.com/zigflow/studio/tree/main/charts/studio)
 ![Type: Application](https://img.shields.io/badge/Type-Application-informational)
 
 {{ template "chart.description" . }}
@@ -27,10 +27,10 @@
 
 ## TL;DR
 
-Be sure to set `${ZIGFLOW_VERSION}` with [your desired version](https://github.com/zigflow/ui/pkgs/container/charts%2Fui)
+Be sure to set `${ZIGFLOW_VERSION}` with [your desired version](https://github.com/zigflow/studio/pkgs/container/charts%2Fstudio)
 
 ```sh
-helm install myrelease oci://ghcr.io/mrsimonemms/charts/ui@${ZIGFLOW_VERSION}
+helm install myrelease oci://ghcr.io/mrsimonemms/charts/studio@${ZIGFLOW_VERSION}
 ```
 
 {{ template "chart.maintainersSection" . }}

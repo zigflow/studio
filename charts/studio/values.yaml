@@ -1,4 +1,4 @@
-# Default values for ui.
+# Default values for studio.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -15,7 +15,7 @@ envvars: []
 
 image:
   # -- Image repository
-  repository: ghcr.io/zigflow/ui
+  repository: ghcr.io/zigflow/studio
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag - defaults to the chart's <code>Version</code> if not set

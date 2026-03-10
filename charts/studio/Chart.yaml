@@ -1,5 +1,5 @@
 apiVersion: v2
-name: ui
+name: studio
 description: Web UI for visualising and editing Zigflow workflows
 type: application
 version: 0.0.0
@@ -10,7 +10,7 @@ maintainers:
     email: simon@simonemms.com
     url: https://simonemms.com
 sources:
-  - https://github.com/zigflow/ui
+  - https://github.com/zigflow/studio
 keywords:
   - DSL
   - Durable Execution
@@ -20,4 +20,4 @@ keywords:
   - Workflows
   - YAML
 annotations:
-  org.opencontainers.image.documentation: https://github.com/zigflow/ui/tree/main/charts/ui
+  org.opencontainers.image.documentation: https://github.com/zigflow/studio/tree/main/charts/studio

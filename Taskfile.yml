@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  TMP_IMG: ttl.sh/zigflow-ui
+  TMP_IMG: ttl.sh/zigflow-studio
   TMP_IMG_TAG: 24h
 
 tasks:
@@ -44,7 +44,7 @@ tasks:
           --set image.tag={{.TMP_IMG_TAG}} \
           --values ./values.example.yaml \
           --wait \
-          zigflow ./charts/ui
+          zigflow ./charts/studio
 
   minikube:
     desc: Start minikube and apply dev manifests
@@ -55,5 +55,5 @@ tasks:
   scan:
     desc: Scan for vulnerabilities
     cmds:
-      - trivy config --severity HIGH,CRITICAL --format table --exit-code 1 charts/ui
-      - trivy image --severity HIGH,CRITICAL --format table --exit-code 1 --pkg-types os,library --ignore-unfixed ghcr.io/zigflow/ui
+      - trivy config --severity HIGH,CRITICAL --format table --exit-code 1 charts/studio
+      - trivy image --severity HIGH,CRITICAL --format table --exit-code 1 --pkg-types os,library --ignore-unfixed ghcr.io/zigflow/studio
