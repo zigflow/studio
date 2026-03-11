@@ -21,6 +21,13 @@
 // to JSON at all times.
 
 // ---------------------------------------------------------------------------
+// Internal metadata key — used to persist stable node/branch IDs across
+// round-trips through the Zigflow DSL YAML format.
+// ---------------------------------------------------------------------------
+
+export const ZIGFLOW_ID_KEY = '__zigflow_id';
+
+// ---------------------------------------------------------------------------
 // Document & file
 // ---------------------------------------------------------------------------
 
@@ -160,9 +167,14 @@ export type LoopNode = {
 // Each config carries a `kind` discriminant for exhaustive switching.
 // ---------------------------------------------------------------------------
 
+// Assignment values support JSON primitives. Objects and arrays are
+// intentionally excluded from the Studio editor (they remain valid in
+// the IR for round-trip purposes but cannot be created via the UI).
+export type AssignmentValue = string | number | boolean | null;
+
 export type SetConfig = {
   kind: 'set';
-  assignments: Record<string, string>;
+  assignments: Record<string, AssignmentValue>;
 };
 
 export type CallHTTPConfig = {
@@ -183,33 +195,62 @@ export type CallGRPCConfig = {
   arguments?: Record<string, string>;
 };
 
+// A simple scalar value or expression string that can be used as a
+// call-activity argument and edited in the Studio UI.
+export type ActivityScalarArg = string | number | boolean | null;
+
+// An argument that was parsed from YAML but is an object or array — the
+// Studio cannot edit these inline, but preserves them for round-trip export.
+export type ActivityComplexArg = { __unsupported: true; value: unknown };
+
+export type ActivityArg = ActivityScalarArg | ActivityComplexArg;
+
+export function isActivityComplexArg(
+  arg: ActivityArg,
+): arg is ActivityComplexArg {
+  return (
+    typeof arg === 'object' &&
+    arg !== null &&
+    '__unsupported' in (arg as object)
+  );
+}
+
 export type CallActivityConfig = {
   kind: 'call-activity';
   name: string;
-  arguments?: string[];
   taskQueue?: string;
+  arguments?: ActivityArg[];
 };
+
+export type LifetimePolicy = 'always' | 'onSuccess' | 'onError' | 'never';
 
 export type RunContainerConfig = {
   kind: 'run-container';
   image: string;
-  arguments?: string[];
-  environment?: Record<string, string>;
+  arguments?: ActivityArg[];
+  environment?: Record<string, AssignmentValue>;
+  workingDirectory?: string;
+  lifetime?: LifetimePolicy;
+  await?: boolean;
+  ports?: unknown; // not editable; round-trip only
 };
 
 export type RunScriptConfig = {
   kind: 'run-script';
   language: string;
   code: string;
-  arguments?: string[];
-  environment?: Record<string, string>;
+  arguments?: ActivityArg[];
+  environment?: Record<string, AssignmentValue>;
+  // await is always true for scripts; not stored
 };
 
 export type RunShellConfig = {
   kind: 'run-shell';
   command: string;
-  arguments?: string[];
-  environment?: Record<string, string>;
+  arguments?: ActivityArg[];
+  environment?: Record<string, AssignmentValue>;
+  workingDirectory?: string;
+  await?: boolean;
 };
 
 export type RunWorkflowConfig = {
@@ -217,6 +258,7 @@ export type RunWorkflowConfig = {
   name: string;
   namespace: string;
   version: string;
+  await?: boolean;
 };
 
 export type WaitConfig = {
@@ -231,11 +273,82 @@ export type DurationSpec = {
   days?: number;
 };
 
+// Serverless Workflow native error types — canonical URI values with display keys.
+export const SW_ERROR_DEFINITIONS = [
+  {
+    key: 'authentication',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/authentication',
+  },
+  {
+    key: 'authorization',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/authorization',
+  },
+  {
+    key: 'communication',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/communication',
+  },
+  {
+    key: 'configuration',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/configuration',
+  },
+  {
+    key: 'expression',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/expression',
+  },
+  {
+    key: 'runtime',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/runtime',
+  },
+  {
+    key: 'timeout',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/timeout',
+  },
+  {
+    key: 'validation',
+    value: 'https://serverlessworkflow.io/spec/1.0.0/errors/validation',
+  },
+] as const;
+
+export type SwErrorType = (typeof SW_ERROR_DEFINITIONS)[number]['value'];
+
+// Named URI constants for special raise types (used by editor logic).
+export const GO_PANIC_URI = 'https://go.dev/panic' as const;
+export const TEMPORAL_NON_RETRYABLE_URI =
+  'https://temporal.io/errors/nonretryable' as const;
+
+// Special raise types — same shape as SW_ERROR_DEFAULT_STATUS (URI → status).
+export const RAISE_SPECIAL_TYPES: Readonly<Record<string, number>> = {
+  [GO_PANIC_URI]: 500,
+  [TEMPORAL_NON_RETRYABLE_URI]: 500,
+};
+
+// Default HTTP-like status codes per Serverless Workflow error type URI.
+// Spec-defined values; anything not in this map defaults to 400.
+const SW_ERROR_DEFAULT_STATUS: Readonly<Record<string, number>> = {
+  'https://serverlessworkflow.io/spec/1.0.0/errors/configuration': 400,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/validation': 400,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/expression': 400,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/authentication': 401,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/authorization': 403,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/timeout': 408,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/communication': 500,
+  'https://serverlessworkflow.io/spec/1.0.0/errors/runtime': 500,
+};
+
+export function defaultStatusForType(type: string): number {
+  return SW_ERROR_DEFAULT_STATUS[type] ?? RAISE_SPECIAL_TYPES[type] ?? 400;
+}
+
+export type RaiseErrorDefinition = {
+  type?: string; // SW error type
+  title?: string; // StringOrRuntimeExpr
+  detail?: string; // StringOrRuntimeExpr
+  status?: number; // optional HTTP-like status integer
+};
+
 export type RaiseConfig = {
   kind: 'raise';
-  errorType: string;
-  errorStatus: number;
-  errorDetail?: string;
+  definition?: RaiseErrorDefinition;
 };
 
 export type ListenEvent = {
@@ -248,7 +361,7 @@ export type ListenEvent = {
 
 export type ListenConfig = {
   kind: 'listen';
-  mode: 'one' | 'all';
+  mode: 'one' | 'all' | 'any';
   events: ListenEvent[];
 };
 

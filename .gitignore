@@ -33,3 +33,4 @@ static/fonts
 
 /workflows
 !/workflows/demo-workflow.yaml
+.claude/

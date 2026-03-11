@@ -417,8 +417,16 @@ Key expectations:
 
 Claude should not introduce formatting changes that contradict Prettier output.
 
-**IMPORTANT: Before completing any work, always run `npm run format` and
-`npm run lint` to ensure all files are properly formatted. This is mandatory.**
+**IMPORTANT: Before completing any work, always run the following commands in
+order and ensure they all pass. This is mandatory.**
+
+```sh
+npm run format          # auto-formats all files
+npm run lint            # Prettier check + ESLint + markdownlint
+npm run check           # svelte-check TypeScript type checking
+npm run dev             # verify the app starts without errors
+pre-commit run --all-files  # full pre-commit suite (license, YAML, markdown, ESLint, format)
+```
 
 The `npm run lint` command includes:
 
@@ -426,9 +434,9 @@ The `npm run lint` command includes:
 - ESLint for JavaScript/TypeScript code
 - Markdown linting (markdownlint-cli2) for all .md files
 
-**IMPORTANT: After fixing format and lint issues, run `npm run dev` to verify
-the application starts without errors. Fix any runtime errors before considering
-the work complete. This is mandatory.**
+The `npm run check` command runs `svelte-kit sync && svelte-check` and must
+report 0 errors before work is considered complete. Fix type errors in source
+and test files; do not suppress them.
 
 ---
 
@@ -439,8 +447,9 @@ the work complete. This is mandatory.**
 - `no-undef` is intentionally disabled
 - Svelte files are type-checked via `typescript-eslint`
 
-**IMPORTANT: Before completing any work, always run `npm run lint` to ensure
-all code passes linting. This is mandatory.**
+**IMPORTANT: Before completing any work, always run `npm run lint` and
+`npm run check` to ensure all code passes linting and type checking. This is
+mandatory.**
 
 Do not:
 
