@@ -28,6 +28,7 @@ import type {
   TaskNode,
   TryNode,
 } from './model';
+import { ZIGFLOW_ID_KEY } from './model';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,7 +38,7 @@ export type TaskCategory = 'task' | 'control';
 
 export type TaskDefinition = {
   type: NodeType;
-  label: string;
+  labelKey: string; // i18n key — call t(def.labelKey) in UI
   category: TaskCategory;
   description?: string;
   create: () => Node;
@@ -62,7 +63,7 @@ function taskNode(name: string, type: NodeType): TaskNode {
     type: 'task',
     name,
     config: defaultConfig(type),
-    metadata: { __zigflow_id: nid },
+    metadata: { [ZIGFLOW_ID_KEY]: nid },
   } as TaskNode;
 }
 
@@ -78,7 +79,7 @@ function defaultConfig(type: NodeType): TaskNode['config'] {
         protoEndpoint: '',
         serviceName: '',
         serviceHost: '',
-        servicePort: 443,
+        servicePort: 50051,
         method: '',
       };
     case 'call-activity':
@@ -99,7 +100,7 @@ function defaultConfig(type: NodeType): TaskNode['config'] {
     case 'wait':
       return { kind: 'wait', duration: { seconds: 30 } };
     case 'raise':
-      return { kind: 'raise', errorType: '', errorStatus: 500 };
+      return { kind: 'raise' };
     case 'listen':
       return { kind: 'listen', mode: 'one', events: [] };
     default:
@@ -116,77 +117,77 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
   // ── Task nodes ────────────────────────────────────────────────────────────
   {
     type: 'set',
-    label: 'Set',
+    labelKey: 'tasks.set',
     category: 'task',
     description: 'Assign values to workflow variables',
     create: () => taskNode('set-variables', 'set'),
   },
   {
     type: 'call-http',
-    label: 'Call HTTP',
+    labelKey: 'inspector.callHttp.title',
     category: 'task',
     description: 'Make an HTTP request',
     create: () => taskNode('http-call', 'call-http'),
   },
   {
     type: 'call-grpc',
-    label: 'Call gRPC',
+    labelKey: 'inspector.callGrpc.title',
     category: 'task',
     description: 'Invoke a gRPC service method',
     create: () => taskNode('grpc-call', 'call-grpc'),
   },
   {
     type: 'call-activity',
-    label: 'Call Activity',
+    labelKey: 'inspector.callActivity.title',
     category: 'task',
     description: 'Execute a Temporal activity',
     create: () => taskNode('run-activity', 'call-activity'),
   },
   {
     type: 'run-container',
-    label: 'Run Container',
+    labelKey: 'inspector.run.container.title',
     category: 'task',
     description: 'Run a container image',
     create: () => taskNode('run-container', 'run-container'),
   },
   {
     type: 'run-script',
-    label: 'Run Script',
+    labelKey: 'inspector.run.script.title',
     category: 'task',
     description: 'Execute an inline script',
     create: () => taskNode('run-script', 'run-script'),
   },
   {
     type: 'run-shell',
-    label: 'Run Shell',
+    labelKey: 'inspector.run.shell.title',
     category: 'task',
     description: 'Execute a shell command',
     create: () => taskNode('run-shell', 'run-shell'),
   },
   {
     type: 'run-workflow',
-    label: 'Run Workflow',
+    labelKey: 'inspector.run.workflow.title',
     category: 'task',
     description: 'Invoke another Zigflow workflow',
     create: () => taskNode('run-workflow', 'run-workflow'),
   },
   {
     type: 'wait',
-    label: 'Wait',
+    labelKey: 'tasks.wait',
     category: 'task',
     description: 'Pause execution for a duration',
     create: () => taskNode('wait', 'wait'),
   },
   {
     type: 'raise',
-    label: 'Raise',
+    labelKey: 'inspector.raise.title',
     category: 'task',
     description: 'Raise an error',
     create: () => taskNode('raise-error', 'raise'),
   },
   {
     type: 'listen',
-    label: 'Listen',
+    labelKey: 'inspector.listen.title',
     category: 'task',
     description: 'Wait for one or more events',
     create: () => taskNode('listen-event', 'listen'),
@@ -195,7 +196,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
   // ── Control flow nodes ────────────────────────────────────────────────────
   {
     type: 'switch',
-    label: 'Switch',
+    labelKey: 'tasks.switch',
     category: 'control',
     description: 'Branch on a condition',
     create: (): SwitchNode => {
@@ -205,13 +206,13 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         type: 'switch',
         name: 'switch',
         branches: [],
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
   {
     type: 'fork',
-    label: 'Fork',
+    labelKey: 'tasks.fork',
     category: 'control',
     description: 'Run branches in parallel',
     create: (): ForkNode => {
@@ -222,13 +223,13 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         name: 'fork',
         compete: false,
         branches: [],
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
   {
     type: 'try',
-    label: 'Try / Catch',
+    labelKey: 'tasks.try',
     category: 'control',
     description: 'Execute with error handling',
     create: (): TryNode => {
@@ -238,13 +239,13 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         type: 'try',
         name: 'try-catch',
         tryGraph: emptyGraph(),
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
   {
     type: 'loop',
-    label: 'Loop',
+    labelKey: 'tasks.loop',
     category: 'control',
     description: 'Iterate over a collection',
     create: (): LoopNode => {
@@ -255,7 +256,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         name: 'loop',
         in: '$.',
         bodyGraph: emptyGraph(),
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },

@@ -825,6 +825,12 @@
   }
 
   // Add a catchGraph to a TryNode and navigate into it immediately.
+  // Replace a node in the current graph with an updated version emitted by
+  // an Inspector editor. Uses replaceNode to minimise the diff.
+  function handleNodeUpdate(updatedNode: Node): void {
+    updateCurrentGraph((g) => replaceNode(g, updatedNode));
+  }
+
   function handleAddCatch(nodeId: string) {
     const node = resolveNode(nodeId);
     if (!node || node.type !== 'try' || node.catchGraph !== undefined) return;
@@ -953,6 +959,7 @@
         onmoveup={handleMoveUp}
         onmovedown={handleMoveDown}
         ondelete={handleDelete}
+        onupdate={handleNodeUpdate}
         onenternode={handleEnterNode}
         onenterbranch={handleEnterBranch}
         onaddbranch={handleAddBranch}

@@ -45,6 +45,7 @@ import type {
   WaitConfig,
   WorkflowFile,
 } from './model';
+import { ZIGFLOW_ID_KEY } from './model';
 import { TASK_REGISTRY } from './registry';
 
 // ---------------------------------------------------------------------------
@@ -182,13 +183,13 @@ export function createTaskNode(name: string, config: TaskConfig): TaskNode {
     type: 'task',
     name,
     config,
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
 }
 
 export function createSetNode(
   name: string,
-  assignments: Record<string, string>,
+  assignments: SetConfig['assignments'],
 ): TaskNode {
   const config: SetConfig = { kind: 'set', assignments };
   return createTaskNode(name, config);
@@ -275,7 +276,7 @@ export function createSwitchNode(name: string): SwitchNode {
     type: 'switch',
     name,
     branches: [],
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
 }
 
@@ -290,7 +291,7 @@ export function addSwitchBranch(
     label,
     condition,
     graph: emptyFlowGraph(),
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
   return { ...node, branches: [...node.branches, branch] };
 }
@@ -343,7 +344,7 @@ export function createForkNode(name: string): ForkNode {
     name,
     compete: false,
     branches: [],
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
 }
 
@@ -353,7 +354,7 @@ export function addForkBranch(node: ForkNode, label: string): ForkNode {
     id: zid,
     label,
     graph: emptyFlowGraph(),
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
   return { ...node, branches: [...node.branches, branch] };
 }
@@ -402,7 +403,7 @@ export function createTryNode(name: string): TryNode {
     type: 'try',
     name,
     tryGraph: emptyFlowGraph(),
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
 }
 
@@ -426,7 +427,7 @@ export function createLoopNode(name: string, inExpr: string): LoopNode {
     name,
     in: inExpr,
     bodyGraph: emptyFlowGraph(),
-    metadata: { __zigflow_id: zid },
+    metadata: { [ZIGFLOW_ID_KEY]: zid },
   };
 }
 

@@ -37,8 +37,19 @@
   // Palette — split registry into two groups
   // ---------------------------------------------------------------------------
 
-  const taskItems = TASK_REGISTRY.filter((d) => d.category === 'task');
-  const controlItems = TASK_REGISTRY.filter((d) => d.category === 'control');
+  function byLabel(
+    a: (typeof TASK_REGISTRY)[number],
+    b: (typeof TASK_REGISTRY)[number],
+  ): number {
+    return t(a.labelKey).localeCompare(t(b.labelKey));
+  }
+
+  const taskItems = $derived(
+    TASK_REGISTRY.filter((d) => d.category === 'task').sort(byLabel),
+  );
+  const controlItems = $derived(
+    TASK_REGISTRY.filter((d) => d.category === 'control').sort(byLabel),
+  );
 
   function handleDragStart(event: DragEvent, nodeType: string) {
     event.dataTransfer?.setData('application/node-type', nodeType);
@@ -100,7 +111,7 @@
             title={def.description}
             ondragstart={(e) => handleDragStart(e, def.type)}
           >
-            {def.label}
+            {t(def.labelKey)}
           </div>
         </li>
       {/each}
@@ -118,7 +129,7 @@
             title={def.description}
             ondragstart={(e) => handleDragStart(e, def.type)}
           >
-            {def.label}
+            {t(def.labelKey)}
           </div>
         </li>
       {/each}
