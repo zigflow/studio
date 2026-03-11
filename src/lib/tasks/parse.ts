@@ -39,6 +39,8 @@
 import yaml from 'js-yaml';
 
 import type {
+  ActivityArg,
+  AssignmentValue,
   CallActivityConfig,
   CallGRPCConfig,
   CallHTTPConfig,
@@ -46,6 +48,7 @@ import type {
   FlowGraph,
   ForkBranch,
   ForkNode,
+  LifetimePolicy,
   ListenConfig,
   ListenEvent,
   LoopNode,
@@ -64,6 +67,7 @@ import type {
   WaitConfig,
   WorkflowFile,
 } from './model';
+import { ZIGFLOW_ID_KEY } from './model';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -339,13 +343,13 @@ function resolveId(
   ctx: ParseCtx,
 ): { id: string; metadata: Record<string, unknown> } {
   const metadata = (def['metadata'] ?? {}) as Record<string, unknown>;
-  const existing = metadata['__zigflow_id'];
+  const existing = metadata[ZIGFLOW_ID_KEY];
   if (typeof existing === 'string' && existing.length > 0) {
     return { id: existing, metadata };
   }
   const id = crypto.randomUUID();
   ctx.modified = true;
-  return { id, metadata: { ...metadata, __zigflow_id: id } };
+  return { id, metadata: { ...metadata, [ZIGFLOW_ID_KEY]: id } };
 }
 
 // ---------------------------------------------------------------------------
@@ -412,7 +416,11 @@ function parseTaskConfig(
 function buildSetConfig(def: RawEntry): SetConfig {
   return {
     kind: 'set',
-    assignments: (def['set'] ?? {}) as Record<string, string>,
+    // js-yaml parses YAML scalars to their native JS types (boolean, number,
+    // null, string). The cast here is intentionally permissive; invalid
+    // complex types (objects/arrays) are blocked by the Studio editor, not
+    // the parser, to allow round-trip fidelity for manually authored files.
+    assignments: (def['set'] ?? {}) as SetConfig['assignments'],
   };
 }
 
@@ -462,8 +470,20 @@ function buildCallConfig(
       kind: 'call-activity',
       name: String(w['name'] ?? ''),
     };
-    if (w['arguments'] !== undefined)
-      cfg.arguments = w['arguments'] as string[];
+    if (w['arguments'] !== undefined) {
+      const rawArgs = w['arguments'] as unknown[];
+      cfg.arguments = rawArgs.map((arg): ActivityArg => {
+        if (
+          typeof arg === 'string' ||
+          typeof arg === 'number' ||
+          typeof arg === 'boolean' ||
+          arg === null
+        ) {
+          return arg;
+        }
+        return { __unsupported: true, value: arg };
+      });
+    }
     if (w['taskQueue'] !== undefined) cfg.taskQueue = String(w['taskQueue']);
     return cfg;
   }
@@ -482,10 +502,29 @@ function buildRunConfig(
       kind: 'run-container',
       image: String(container['image'] ?? ''),
     };
-    if (container['arguments'] !== undefined)
-      cfg.arguments = container['arguments'] as string[];
+    if (container['arguments'] !== undefined) {
+      const rawArgs = container['arguments'] as unknown[];
+      cfg.arguments = rawArgs.map(
+        (arg): ActivityArg =>
+          typeof arg === 'string' ||
+          typeof arg === 'number' ||
+          typeof arg === 'boolean' ||
+          arg === null
+            ? arg
+            : { __unsupported: true, value: arg },
+      );
+    }
     if (container['environment'] !== undefined)
-      cfg.environment = container['environment'] as Record<string, string>;
+      cfg.environment = container['environment'] as Record<
+        string,
+        AssignmentValue
+      >;
+    if (typeof container['workingDirectory'] === 'string')
+      cfg.workingDirectory = container['workingDirectory'];
+    if (container['lifetime'] !== undefined)
+      cfg.lifetime = String(container['lifetime']) as LifetimePolicy;
+    if (typeof container['await'] === 'boolean') cfg.await = container['await'];
+    if (container['ports'] !== undefined) cfg.ports = container['ports'];
     return cfg;
   }
 
@@ -496,10 +535,23 @@ function buildRunConfig(
       language: String(script['language'] ?? ''),
       code: String(script['code'] ?? ''),
     };
-    if (script['arguments'] !== undefined)
-      cfg.arguments = script['arguments'] as string[];
+    if (script['arguments'] !== undefined) {
+      const rawArgs = script['arguments'] as unknown[];
+      cfg.arguments = rawArgs.map(
+        (arg): ActivityArg =>
+          typeof arg === 'string' ||
+          typeof arg === 'number' ||
+          typeof arg === 'boolean' ||
+          arg === null
+            ? arg
+            : { __unsupported: true, value: arg },
+      );
+    }
     if (script['environment'] !== undefined)
-      cfg.environment = script['environment'] as Record<string, string>;
+      cfg.environment = script['environment'] as Record<
+        string,
+        AssignmentValue
+      >;
     return cfg;
   }
 
@@ -509,21 +561,36 @@ function buildRunConfig(
       kind: 'run-shell',
       command: String(shell['command'] ?? ''),
     };
-    if (shell['arguments'] !== undefined)
-      cfg.arguments = shell['arguments'] as string[];
+    if (shell['arguments'] !== undefined) {
+      const rawArgs = shell['arguments'] as unknown[];
+      cfg.arguments = rawArgs.map(
+        (arg): ActivityArg =>
+          typeof arg === 'string' ||
+          typeof arg === 'number' ||
+          typeof arg === 'boolean' ||
+          arg === null
+            ? arg
+            : { __unsupported: true, value: arg },
+      );
+    }
     if (shell['environment'] !== undefined)
-      cfg.environment = shell['environment'] as Record<string, string>;
+      cfg.environment = shell['environment'] as Record<string, AssignmentValue>;
+    if (typeof shell['workingDirectory'] === 'string')
+      cfg.workingDirectory = shell['workingDirectory'];
+    if (typeof shell['await'] === 'boolean') cfg.await = shell['await'];
     return cfg;
   }
 
   if ('workflow' in run) {
     const wf = run['workflow'] as Record<string, unknown>;
-    return {
+    const cfg: RunWorkflowConfig = {
       kind: 'run-workflow',
       name: String(wf['name'] ?? ''),
       namespace: String(wf['namespace'] ?? ''),
       version: String(wf['version'] ?? ''),
     };
+    if (typeof wf['await'] === 'boolean') cfg.await = wf['await'];
+    return cfg;
   }
 
   throw new Error('Unknown run type in do-entry');

@@ -1,0 +1,30 @@
+<!--
+  ~ Copyright 2025 - 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<script lang="ts">
+  // TryNodeEditor — placeholder for try-specific config.
+  // Section navigation (try body / catch block) is handled by Inspector.svelte.
+  import type { Node } from '$lib/tasks/model';
+
+  interface Props {
+    node: Node;
+    onupdate: (node: Node) => void;
+  }
+
+  // Props declared but not used — structure is in place for future fields.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let { node, onupdate }: Props = $props();
+</script>

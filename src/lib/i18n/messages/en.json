@@ -27,6 +27,8 @@
   },
   "inspector": {
     "empty": "Select a node to inspect it.",
+    "name": "Name",
+    "nodeId": "Node ID",
     "id": "ID",
     "kind": "Kind",
     "detail": "Detail",
@@ -45,7 +47,234 @@
     "moveUpLabel": "Move task up",
     "moveDown": "↓ Move down",
     "moveDownLabel": "Move task down",
-    "delete": "Delete task"
+    "delete": "Delete task",
+    "set": {
+      "title": "Assignments",
+      "addRow": "+ Add assignment",
+      "keyLabel": "Key",
+      "valueLabel": "Value",
+      "removeRow": "Remove",
+      "overrideLabel": "Type for {{key}}",
+      "overrideAuto": "Auto",
+      "overrideString": "String",
+      "overrideNumber": "Number",
+      "overrideBoolean": "Boolean",
+      "overrideNull": "Null",
+      "errorObjectArray": "Objects and arrays are not supported",
+      "errorNotNumber": "Must be a valid number",
+      "errorNotBoolean": "Must be true or false"
+    },
+    "wait": {
+      "title": "Duration",
+      "seconds": "Seconds",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days"
+    },
+    "fork": {
+      "compete": "Compete mode",
+      "competeHint": "First branch to finish wins"
+    },
+    "loop": {
+      "title": "Loop configuration",
+      "in": "Collection",
+      "each": "Item variable",
+      "at": "Index variable",
+      "while": "Break condition"
+    },
+    "callGrpc": {
+      "title": "Call gRPC",
+      "proto": {
+        "title": "Proto",
+        "endpoint": "Endpoint"
+      },
+      "service": {
+        "title": "Service",
+        "name": "Service name",
+        "host": "Host",
+        "hostPlaceholder": "localhost",
+        "port": "Port",
+        "portPlaceholder": "50051",
+        "portInvalid": "Port must be a positive integer"
+      },
+      "method": "Method",
+      "arguments": {
+        "title": "Arguments",
+        "addRow": "+ Add argument",
+        "keyLabel": "Name",
+        "valueLabel": "Value",
+        "removeRow": "Remove argument"
+      }
+    },
+    "callActivity": {
+      "title": "Call Activity",
+      "activityName": "Activity name",
+      "activityNameRequired": "Activity name is required",
+      "taskQueue": "Task queue",
+      "taskQueueRequired": "Task queue is required",
+      "arguments": {
+        "title": "Arguments",
+        "addRow": "+ Add argument",
+        "valueLabel": "Value",
+        "typeLabel": "Type for argument {{index}}",
+        "removeRow": "Remove argument",
+        "moveUp": "Move argument up",
+        "moveDown": "Move argument down",
+        "complexHint": "Object/array — not editable in Studio",
+        "overrideAuto": "Auto",
+        "overrideString": "String",
+        "overrideNumber": "Number",
+        "overrideBoolean": "Boolean",
+        "overrideNull": "Null",
+        "overrideExpression": "Expression",
+        "errorNotNumber": "Must be a valid number",
+        "errorNotBoolean": "Must be true or false"
+      }
+    },
+    "run": {
+      "await": {
+        "label": "Await result",
+        "help": {
+          "workflow": "When disabled, the child workflow starts and the parent continues immediately (abandon policy)."
+        }
+      },
+      "container": {
+        "title": "Run Container",
+        "image": {
+          "label": "Image",
+          "required": "Image is required"
+        },
+        "arguments": {
+          "title": "Arguments",
+          "addRow": "+ Add argument",
+          "valueLabel": "Argument value",
+          "removeRow": "Remove argument"
+        },
+        "env": {
+          "title": "Environment variables",
+          "addRow": "+ Add variable",
+          "keyLabel": "Name",
+          "valueLabel": "Value",
+          "removeRow": "Remove variable",
+          "overrideLabel": "Type for {{key}}"
+        },
+        "workingDirectory": {
+          "label": "Working directory"
+        },
+        "lifetime": {
+          "label": "Container cleanup",
+          "always": "Always",
+          "onSuccess": "On success",
+          "onError": "On error",
+          "never": "Never"
+        },
+        "ports": {
+          "warning": "This node has ports configured. Ports are not supported by the runtime and should be removed.",
+          "removePorts": "Remove ports"
+        }
+      },
+      "script": {
+        "title": "Run Script",
+        "language": {
+          "label": "Language"
+        },
+        "code": {
+          "label": "Inline code",
+          "required": "Code is required"
+        },
+        "env": {
+          "title": "Environment variables",
+          "addRow": "+ Add variable",
+          "keyLabel": "Name",
+          "valueLabel": "Value",
+          "removeRow": "Remove variable",
+          "overrideLabel": "Type for {{key}}"
+        },
+        "arguments": {
+          "title": "Arguments",
+          "addRow": "+ Add argument",
+          "valueLabel": "Argument value",
+          "removeRow": "Remove argument"
+        }
+      },
+      "shell": {
+        "title": "Run Shell",
+        "command": {
+          "label": "Command",
+          "required": "Command is required"
+        },
+        "arguments": {
+          "title": "Arguments",
+          "addRow": "+ Add argument",
+          "valueLabel": "Argument value",
+          "removeRow": "Remove argument"
+        },
+        "env": {
+          "title": "Environment variables",
+          "addRow": "+ Add variable",
+          "keyLabel": "Name",
+          "valueLabel": "Value",
+          "removeRow": "Remove variable",
+          "overrideLabel": "Type for {{key}}"
+        },
+        "workingDirectory": {
+          "label": "Working directory"
+        }
+      },
+      "workflow": {
+        "title": "Run Workflow",
+        "name": {
+          "label": "Workflow name",
+          "required": "Workflow name is required"
+        },
+        "namespace": {
+          "label": "Namespace"
+        }
+      }
+    },
+    "callHttp": {
+      "title": "Call HTTP",
+      "method": "Method",
+      "endpoint": "URL",
+      "endpointRequired": "URL is required",
+      "headers": {
+        "title": "Headers",
+        "addRow": "+ Add header",
+        "keyLabel": "Header name",
+        "valueLabel": "Value",
+        "removeRow": "Remove header"
+      },
+      "body": {
+        "title": "Body",
+        "addBody": "+ Add body",
+        "removeBody": "Remove body"
+      }
+    },
+    "common": {
+      "title": "Common",
+      "if": {
+        "label": "Condition (if)"
+      },
+      "metadata": {
+        "title": "Metadata",
+        "addRow": "+ Add entry",
+        "keyLabel": "Key",
+        "valueLabel": "Value",
+        "removeRow": "Remove",
+        "overrideLabel": "Type for {{key}}",
+        "type": {
+          "auto": "Auto",
+          "string": "String",
+          "number": "Number",
+          "boolean": "Boolean",
+          "null": "Null"
+        }
+      }
+    }
+  },
+  "errors": {
+    "duplicateKey": "Duplicate key",
+    "invalidNumber": "Must be a valid number"
   },
   "sidebar": {
     "document": "Document",

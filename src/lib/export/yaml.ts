@@ -22,6 +22,7 @@
 //   Each SwitchBranch carries an embedded FlowGraph. The exporter "hoists"
 //   those graphs as named `do` tasks at the top level of the document, then
 //   generates `then: <hoisted-name>` references in the switch entries.
+import { isActivityComplexArg } from '$lib/tasks/model';
 import type {
   CallActivityConfig,
   CallGRPCConfig,
@@ -228,8 +229,12 @@ function exportCallActivityConfig(
   c: CallActivityConfig,
 ): Record<string, unknown> {
   const w: Record<string, unknown> = { name: c.name };
-  if (c.arguments !== undefined) w.arguments = c.arguments;
   if (c.taskQueue !== undefined) w.taskQueue = c.taskQueue;
+  if (c.arguments !== undefined) {
+    w.arguments = c.arguments.map((arg) =>
+      isActivityComplexArg(arg) ? arg.value : arg,
+    );
+  }
   return { call: 'activity', with: w };
 }
 
@@ -237,8 +242,16 @@ function exportRunContainerConfig(
   c: RunContainerConfig,
 ): Record<string, unknown> {
   const container: Record<string, unknown> = { image: c.image };
-  if (c.arguments !== undefined) container.arguments = c.arguments;
+  if (c.arguments !== undefined)
+    container.arguments = c.arguments.map((arg) =>
+      isActivityComplexArg(arg) ? arg.value : arg,
+    );
   if (c.environment !== undefined) container.environment = c.environment;
+  if (c.workingDirectory !== undefined)
+    container.workingDirectory = c.workingDirectory;
+  if (c.lifetime !== undefined) container.lifetime = c.lifetime;
+  if (c.await === false) container.await = false;
+  if (c.ports !== undefined) container.ports = c.ports;
   return { run: { container } };
 }
 
@@ -247,26 +260,37 @@ function exportRunScriptConfig(c: RunScriptConfig): Record<string, unknown> {
     language: c.language,
     code: c.code,
   };
-  if (c.arguments !== undefined) script.arguments = c.arguments;
+  if (c.arguments !== undefined)
+    script.arguments = c.arguments.map((arg) =>
+      isActivityComplexArg(arg) ? arg.value : arg,
+    );
   if (c.environment !== undefined) script.environment = c.environment;
   return { run: { script } };
 }
 
 function exportRunShellConfig(c: RunShellConfig): Record<string, unknown> {
   const shell: Record<string, unknown> = { command: c.command };
-  if (c.arguments !== undefined) shell.arguments = c.arguments;
+  if (c.arguments !== undefined)
+    shell.arguments = c.arguments.map((arg) =>
+      isActivityComplexArg(arg) ? arg.value : arg,
+    );
   if (c.environment !== undefined) shell.environment = c.environment;
+  if (c.workingDirectory !== undefined)
+    shell.workingDirectory = c.workingDirectory;
+  if (c.await === false) shell.await = false;
   return { run: { shell } };
 }
 
 function exportRunWorkflowConfig(
   c: RunWorkflowConfig,
 ): Record<string, unknown> {
-  return {
-    run: {
-      workflow: { name: c.name, namespace: c.namespace, version: c.version },
-    },
+  const workflow: Record<string, unknown> = {
+    name: c.name,
+    namespace: c.namespace,
+    version: c.version,
   };
+  if (c.await === false) workflow.await = false;
+  return { run: { workflow } };
 }
 
 function exportWaitConfig(c: WaitConfig): Record<string, unknown> {

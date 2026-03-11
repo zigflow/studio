@@ -28,6 +28,7 @@ import type {
   TaskNode,
   TryNode,
 } from './model';
+import { ZIGFLOW_ID_KEY } from './model';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,7 +63,7 @@ function taskNode(name: string, type: NodeType): TaskNode {
     type: 'task',
     name,
     config: defaultConfig(type),
-    metadata: { __zigflow_id: nid },
+    metadata: { [ZIGFLOW_ID_KEY]: nid },
   } as TaskNode;
 }
 
@@ -78,7 +79,7 @@ function defaultConfig(type: NodeType): TaskNode['config'] {
         protoEndpoint: '',
         serviceName: '',
         serviceHost: '',
-        servicePort: 443,
+        servicePort: 50051,
         method: '',
       };
     case 'call-activity':
@@ -205,7 +206,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         type: 'switch',
         name: 'switch',
         branches: [],
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
@@ -222,7 +223,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         name: 'fork',
         compete: false,
         branches: [],
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
@@ -238,7 +239,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         type: 'try',
         name: 'try-catch',
         tryGraph: emptyGraph(),
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },
@@ -255,7 +256,7 @@ export const TASK_REGISTRY: readonly TaskDefinition[] = [
         name: 'loop',
         in: '$.',
         bodyGraph: emptyGraph(),
-        metadata: { __zigflow_id: nid },
+        metadata: { [ZIGFLOW_ID_KEY]: nid },
       };
     },
   },

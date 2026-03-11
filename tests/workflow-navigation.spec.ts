@@ -44,7 +44,7 @@ test.describe('Workflow navigation invariants', () => {
     ).toHaveAttribute('data-selected', 'true');
 
     // Inspector should also be open after refresh with a selected node.
-    await expect(page.locator('.inspector-name')).toContainText('greet');
+    await expect(page.locator('.inspector-name')).toHaveValue('greet');
   });
 
   test('selecting switch branch updates query param', async ({ page }) => {
@@ -94,6 +94,6 @@ test.describe('Workflow navigation invariants', () => {
     ).toHaveAttribute('data-selected', 'true');
 
     // Inspector should reopen after popstate restores a selected node.
-    await expect(page.locator('.inspector-name')).toContainText('greet');
+    await expect(page.locator('.inspector-name')).toHaveValue('greet');
   });
 });
