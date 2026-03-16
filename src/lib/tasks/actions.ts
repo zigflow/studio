@@ -88,6 +88,135 @@ export function addWorkflow(file: WorkflowFile, name: string): WorkflowFile {
   };
 }
 
+// Collect all workflow names that are referenced by any node in the file.
+// References come from two sources:
+//   1. SwitchBranch.thenWorkflowName  — a `then:` redirect to a named workflow
+//   2. TaskNode with config.kind === 'run-workflow' — an explicit run call
+//
+// The returned set contains workflow *names* (not IDs).
+export function referencedWorkflowNames(file: WorkflowFile): Set<string> {
+  const names = new Set<string>();
+
+  function walkGraph(graph: FlowGraph): void {
+    for (const node of Object.values(graph.nodes)) {
+      if (node.type === 'task') {
+        if (node.config.kind === 'run-workflow') {
+          names.add(node.config.name);
+        }
+      } else if (node.type === 'switch') {
+        for (const branch of node.branches) {
+          if (branch.thenWorkflowName) names.add(branch.thenWorkflowName);
+          walkGraph(branch.graph);
+        }
+      } else if (node.type === 'fork') {
+        for (const branch of node.branches) {
+          walkGraph(branch.graph);
+        }
+      } else if (node.type === 'try') {
+        walkGraph(node.tryGraph);
+        if (node.catchGraph) walkGraph(node.catchGraph);
+      } else if (node.type === 'loop') {
+        walkGraph(node.bodyGraph);
+      }
+    }
+  }
+
+  for (const workflow of Object.values(file.workflows)) {
+    walkGraph(workflow.root);
+  }
+
+  return names;
+}
+
+// Update every reference to a workflow name throughout the entire file.
+// Called after renaming a workflow so that SwitchBranch `then:` redirects and
+// run-workflow task configs stay consistent with the new name.
+export function renameWorkflowReferences(
+  file: WorkflowFile,
+  oldName: string,
+  newName: string,
+): WorkflowFile {
+  function updateNode(node: Node): Node {
+    if (node.type === 'task') {
+      if (node.config.kind === 'run-workflow' && node.config.name === oldName) {
+        return { ...node, config: { ...node.config, name: newName } };
+      }
+      return node;
+    }
+    if (node.type === 'switch') {
+      const newBranches = node.branches.map((branch) => {
+        const updatedGraph = updateGraph(branch.graph);
+        const updatedName =
+          branch.thenWorkflowName === oldName
+            ? newName
+            : branch.thenWorkflowName;
+        if (
+          updatedGraph === branch.graph &&
+          updatedName === branch.thenWorkflowName
+        )
+          return branch;
+        return {
+          ...branch,
+          graph: updatedGraph,
+          thenWorkflowName: updatedName,
+        };
+      });
+      if (newBranches.every((b, i) => b === node.branches[i])) return node;
+      return { ...node, branches: newBranches };
+    }
+    if (node.type === 'fork') {
+      const newBranches = node.branches.map((branch) => {
+        const updatedGraph = updateGraph(branch.graph);
+        return updatedGraph === branch.graph
+          ? branch
+          : { ...branch, graph: updatedGraph };
+      });
+      if (newBranches.every((b, i) => b === node.branches[i])) return node;
+      return { ...node, branches: newBranches };
+    }
+    if (node.type === 'try') {
+      const newTryGraph = updateGraph(node.tryGraph);
+      const newCatchGraph = node.catchGraph
+        ? updateGraph(node.catchGraph)
+        : undefined;
+      if (newTryGraph === node.tryGraph && newCatchGraph === node.catchGraph)
+        return node;
+      return { ...node, tryGraph: newTryGraph, catchGraph: newCatchGraph };
+    }
+    if (node.type === 'loop') {
+      const newBodyGraph = updateGraph(node.bodyGraph);
+      return newBodyGraph === node.bodyGraph
+        ? node
+        : { ...node, bodyGraph: newBodyGraph };
+    }
+    return node;
+  }
+
+  function updateGraph(graph: FlowGraph): FlowGraph {
+    const newNodes: Record<string, Node> = {};
+    let changed = false;
+    for (const [id, node] of Object.entries(graph.nodes)) {
+      const updated = updateNode(node);
+      if (updated !== node) changed = true;
+      newNodes[id] = updated;
+    }
+    return changed ? { ...graph, nodes: newNodes } : graph;
+  }
+
+  const newWorkflows: WorkflowFile['workflows'] = {};
+  let changed = false;
+  for (const [id, wf] of Object.entries(file.workflows)) {
+    const newRoot = updateGraph(wf.root);
+    if (newRoot === wf.root) {
+      newWorkflows[id] = wf;
+    } else {
+      changed = true;
+      newWorkflows[id] = { ...wf, root: newRoot };
+    }
+  }
+  return changed ? { ...file, workflows: newWorkflows } : file;
+}
+
 export function removeWorkflow(file: WorkflowFile, id: string): WorkflowFile {
   if (file.order.length <= 1) {
     throw new Error('Cannot remove the last workflow from a file');

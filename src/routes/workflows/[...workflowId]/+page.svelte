@@ -26,12 +26,16 @@
     getGraphAtPath,
     insertNodeAtPath,
     moveNode,
+    referencedWorkflowNames,
     removeForkBranch,
     removeNode,
     removeSwitchBranch,
+    removeWorkflow,
+    renameWorkflowReferences,
     replaceNode,
     updateGraphAtPath,
     updateTrySection,
+    updateWorkflowName,
   } from '$lib/tasks/actions';
   import type {
     FlowGraph,
@@ -635,8 +639,21 @@
     );
   }
 
+  function uniqueWorkflowName(base: string): string {
+    const existing = new Set(
+      Object.values(workflowFile.workflows).map((wf) => wf.name),
+    );
+    if (!existing.has(base)) return base;
+    let n = 2;
+    while (existing.has(`${base}-${n}`)) n++;
+    return `${base}-${n}`;
+  }
+
   function handleAddWorkflow(): void {
-    workflowFile = addWorkflow(workflowFile, 'new-workflow');
+    workflowFile = addWorkflow(
+      workflowFile,
+      uniqueWorkflowName('new-workflow'),
+    );
     markDirty();
     const newId = workflowFile.order[workflowFile.order.length - 1]!;
     selectedWorkflowId = newId;
@@ -648,6 +665,43 @@
       '',
       resolve(`/workflows/${data.workflowId}` as WfPath),
     );
+  }
+
+  function handleDeleteWorkflow(id: string): void {
+    if (workflowFile.order.length <= 1) return; // guard: never remove the last one
+    const wf = workflowFile.workflows[id];
+    if (wf && referencedWorkflowNames(workflowFile).has(wf.name)) return; // guard: in use
+
+    const wasSelected = selectedWorkflowId === id;
+    const prevIndex = workflowFile.order.indexOf(id);
+
+    workflowFile = removeWorkflow(workflowFile, id);
+    markDirty();
+
+    if (wasSelected) {
+      // Pick the previous workflow in the list, or fall back to the first one.
+      const nextId =
+        workflowFile.order[Math.max(0, prevIndex - 1)] ??
+        workflowFile.order[0]!;
+      selectedWorkflowId = nextId;
+      graphPath = { workflowId: nextId, segments: [] };
+      selectedNodeId = null;
+      inspectorOpen = false;
+      history.pushState(
+        null,
+        '',
+        resolve(`/workflows/${data.workflowId}` as WfPath),
+      );
+    }
+  }
+
+  function handleRenameWorkflow(id: string, newName: string): void {
+    const wf = workflowFile.workflows[id];
+    if (!wf || wf.name === newName) return;
+    const oldName = wf.name;
+    workflowFile = updateWorkflowName(workflowFile, id, newName);
+    workflowFile = renameWorkflowReferences(workflowFile, oldName, newName);
+    markDirty();
   }
 
   function handleNodeSelect(nodeId: string | null): void {
@@ -907,6 +961,8 @@
     {selectedWorkflowId}
     onworkflowselect={handleWorkflowSelect}
     onaddworkflow={handleAddWorkflow}
+    onworkflowdelete={handleDeleteWorkflow}
+    onworkflowrename={handleRenameWorkflow}
   />
 
   <!-- Main area: breadcrumb + context indicator + canvas + inspector -->
