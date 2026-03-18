@@ -27,6 +27,7 @@
   interface Props {
     file: WorkflowFile;
     selectedWorkflowId: string;
+    mode?: 'editor' | 'input';
     onworkflowselect?: (id: string) => void;
     onaddworkflow?: () => void;
     onworkflowdelete?: (id: string) => void;
@@ -36,6 +37,7 @@
   let {
     file,
     selectedWorkflowId,
+    mode = 'editor',
     onworkflowselect,
     onaddworkflow,
     onworkflowdelete,
@@ -157,138 +159,142 @@
   </header>
 
   <!-- Workflow list -->
-  <section class="sidebar-section">
-    <p class="sidebar-label">{t('sidebar.workflows')}</p>
-    <ul class="workflow-list">
-      {#each file.order as id (id)}
-        {@const wf = file.workflows[id]}
-        {#if wf}
-          <li class="workflow-list-item">
-            {#if editingId === id}
-              <input
-                class="workflow-rename-input"
-                type="text"
-                bind:value={editingName}
-                onblur={handleRenameCommit}
-                onkeydown={handleRenameKeydown}
-                aria-label={t('sidebar.workflow.renameInput')}
-                use:focusInput
-              />
-            {:else}
-              <button
-                class="workflow-item"
-                class:workflow-item--selected={id === selectedWorkflowId}
-                onclick={() => onworkflowselect?.(id)}
-                type="button"
-              >
-                {wf.name}
-              </button>
-              <button
-                class="workflow-action-btn"
-                onclick={() => handleRenameClick(id)}
-                title={t('sidebar.workflow.rename')}
-                aria-label={t('sidebar.workflow.rename')}
-                type="button"
-              >
-                <svg
-                  aria-hidden="true"
-                  fill="none"
-                  height="12"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.75"
-                  viewBox="0 0 16 16"
-                  width="12"
-                  xmlns="http://www.w3.org/2000/svg"
+  {#if mode === 'editor'}
+    <section class="sidebar-section">
+      <p class="sidebar-label">{t('sidebar.workflows')}</p>
+      <ul class="workflow-list">
+        {#each file.order as id (id)}
+          {@const wf = file.workflows[id]}
+          {#if wf}
+            <li class="workflow-list-item">
+              {#if editingId === id}
+                <input
+                  class="workflow-rename-input"
+                  type="text"
+                  bind:value={editingName}
+                  onblur={handleRenameCommit}
+                  onkeydown={handleRenameKeydown}
+                  aria-label={t('sidebar.workflow.renameInput')}
+                  use:focusInput
+                />
+              {:else}
+                <button
+                  class="workflow-item"
+                  class:workflow-item--selected={id === selectedWorkflowId}
+                  onclick={() => onworkflowselect?.(id)}
+                  type="button"
                 >
-                  <path d="M11 2l3 3-8 8H3v-3z" />
-                  <path d="M9.5 3.5l3 3" />
-                </svg>
-              </button>
-              <button
-                class="workflow-action-btn workflow-delete-btn"
-                class:workflow-action-btn--disabled={!isDeletable(id)}
-                disabled={!isDeletable(id)}
-                onclick={() => handleDeleteClick(id)}
-                title={isDeletable(id)
-                  ? t('sidebar.workflow.delete')
-                  : deleteBlockedReason(id)}
-                aria-label={t('sidebar.workflow.delete')}
-                type="button"
-              >
-                <svg
-                  aria-hidden="true"
-                  fill="none"
-                  height="12"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.75"
-                  viewBox="0 0 16 16"
-                  width="12"
-                  xmlns="http://www.w3.org/2000/svg"
+                  {wf.name}
+                </button>
+                <button
+                  class="workflow-action-btn"
+                  onclick={() => handleRenameClick(id)}
+                  title={t('sidebar.workflow.rename')}
+                  aria-label={t('sidebar.workflow.rename')}
+                  type="button"
                 >
-                  <polyline points="2 4 14 4" />
-                  <path d="M5 4V2h6v2" />
-                  <path d="M3 4l1 10h8l1-10" />
-                  <line x1="6.5" x2="6.5" y1="7" y2="11" />
-                  <line x1="9.5" x2="9.5" y1="7" y2="11" />
-                </svg>
-              </button>
-            {/if}
-          </li>
-        {/if}
-      {/each}
-    </ul>
+                  <svg
+                    aria-hidden="true"
+                    fill="none"
+                    height="12"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    viewBox="0 0 16 16"
+                    width="12"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M11 2l3 3-8 8H3v-3z" />
+                    <path d="M9.5 3.5l3 3" />
+                  </svg>
+                </button>
+                <button
+                  class="workflow-action-btn workflow-delete-btn"
+                  class:workflow-action-btn--disabled={!isDeletable(id)}
+                  disabled={!isDeletable(id)}
+                  onclick={() => handleDeleteClick(id)}
+                  title={isDeletable(id)
+                    ? t('sidebar.workflow.delete')
+                    : deleteBlockedReason(id)}
+                  aria-label={t('sidebar.workflow.delete')}
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="none"
+                    height="12"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    viewBox="0 0 16 16"
+                    width="12"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <polyline points="2 4 14 4" />
+                    <path d="M5 4V2h6v2" />
+                    <path d="M3 4l1 10h8l1-10" />
+                    <line x1="6.5" x2="6.5" y1="7" y2="11" />
+                    <line x1="9.5" x2="9.5" y1="7" y2="11" />
+                  </svg>
+                </button>
+              {/if}
+            </li>
+          {/if}
+        {/each}
+      </ul>
 
-    <button
-      class="add-workflow-btn"
-      onclick={() => onaddworkflow?.()}
-      type="button"
-    >
-      {t('sidebar.addWorkflow')}
-    </button>
-  </section>
+      <button
+        class="add-workflow-btn"
+        onclick={() => onaddworkflow?.()}
+        type="button"
+      >
+        {t('sidebar.addWorkflow')}
+      </button>
+    </section>
+  {/if}
 
   <!-- Task palette -->
-  <section class="sidebar-section palette-section">
-    <p class="sidebar-label">{t('sidebar.tasks')}</p>
-    <ul class="palette-list">
-      {#each taskItems as def (def.type)}
-        <li>
-          <div
-            class="palette-item"
-            draggable="true"
-            role="button"
-            tabindex="0"
-            title={def.description}
-            ondragstart={(e) => handleDragStart(e, def.type)}
-          >
-            {t(def.labelKey)}
-          </div>
-        </li>
-      {/each}
-    </ul>
+  {#if mode === 'editor'}
+    <section class="sidebar-section palette-section">
+      <p class="sidebar-label">{t('sidebar.tasks')}</p>
+      <ul class="palette-list">
+        {#each taskItems as def (def.type)}
+          <li>
+            <div
+              class="palette-item"
+              draggable="true"
+              role="button"
+              tabindex="0"
+              title={def.description}
+              ondragstart={(e) => handleDragStart(e, def.type)}
+            >
+              {t(def.labelKey)}
+            </div>
+          </li>
+        {/each}
+      </ul>
 
-    <p class="sidebar-label palette-label-gap">{t('sidebar.controlFlow')}</p>
-    <ul class="palette-list">
-      {#each controlItems as def (def.type)}
-        <li>
-          <div
-            class="palette-item palette-item--control"
-            draggable="true"
-            role="button"
-            tabindex="0"
-            title={def.description}
-            ondragstart={(e) => handleDragStart(e, def.type)}
-          >
-            {t(def.labelKey)}
-          </div>
-        </li>
-      {/each}
-    </ul>
-  </section>
+      <p class="sidebar-label palette-label-gap">{t('sidebar.controlFlow')}</p>
+      <ul class="palette-list">
+        {#each controlItems as def (def.type)}
+          <li>
+            <div
+              class="palette-item palette-item--control"
+              draggable="true"
+              role="button"
+              tabindex="0"
+              title={def.description}
+              ondragstart={(e) => handleDragStart(e, def.type)}
+            >
+              {t(def.labelKey)}
+            </div>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 </nav>
 
 <!-- Delete confirmation dialog -->

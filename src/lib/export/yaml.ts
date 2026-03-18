@@ -89,6 +89,12 @@ export function exportToYaml(file: WorkflowFile): ExportResult {
 
   const doc: Record<string, unknown> = {
     document: exportDocument(file),
+    input: {
+      schema: {
+        format: file.input.schema.format,
+        document: file.input.schema.document,
+      },
+    },
     do: topLevelTasks,
   };
 

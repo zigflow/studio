@@ -4,6 +4,14 @@ document:
   name: demo-workflow
   version: 0.0.1
   title: Demo Workflow
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      properties:
+        fast:
+          type: boolean
 do:
   - demo-workflow:
       do:
@@ -69,6 +77,16 @@ do:
             metadata:
               __zigflow_id: 1b9eeddd-d06c-4788-b855-22a0faf52523
   - route-fast-path:
-      do: []
+      do:
+        - wait:
+            wait:
+              seconds: 1
+            metadata:
+              __zigflow_id: afb73bc4-503a-490f-aa93-c7fe04dc642d
   - route-default:
-      do: []
+      do:
+        - wait:
+            wait:
+              seconds: 30
+            metadata:
+              __zigflow_id: 69990983-4771-4a00-b11d-df6fb2616ff8

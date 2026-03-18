@@ -18,6 +18,7 @@
     "localeEn": "English (International)",
     "localeEnGb": "English (British)",
     "exportYaml": "Export YAML",
+    "editInputSchema": "Edit input schema",
     "noGraph": "No graph to display.",
     "exportDialog": "YAML export"
   },
@@ -401,6 +402,31 @@
       "body": "body",
       "bodyEmpty": "body (empty)",
       "bodyCount": "body ({{count}} tasks)"
+    }
+  },
+  "input": {
+    "pageTitle": "Editing Input Schema",
+    "backToEditor": "← Back to editor",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Unsaved changes",
+    "saveFailed": "Save failed",
+    "schema": {
+      "fields": "Fields",
+      "colName": "Name",
+      "colType": "Type",
+      "colRequired": "Required",
+      "addField": "+ Add field",
+      "deleteField": "Delete field",
+      "typeString": "string",
+      "typeNumber": "number",
+      "typeBoolean": "boolean",
+      "typeObject": "object",
+      "typeArray": "array",
+      "itemsLabel": "Items",
+      "addChildField": "+ Add child field",
+      "errorNameRequired": "Name is required",
+      "errorNameDuplicate": "Duplicate name"
     }
   },
   "validation": {

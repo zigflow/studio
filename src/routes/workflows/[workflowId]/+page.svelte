@@ -968,6 +968,12 @@
             {t('editor.save')}
           </button>
         {/if}
+        <a
+          class="input-schema-btn"
+          href={resolve(`/workflows/${data.workflowId}/input` as WfPath)}
+        >
+          {t('editor.editInputSchema')}
+        </a>
         <button class="export-btn" onclick={handleExport} type="button">
           {t('editor.exportYaml')}
         </button>
@@ -1094,6 +1100,26 @@
   .save-btn:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  .input-schema-btn {
+    padding: 0.3rem 0.75rem;
+    background: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .input-schema-btn:hover {
+    background: #f5f5f5;
+    border-color: #aaa;
   }
 
   .export-btn {

@@ -41,8 +41,20 @@ export type DocumentMetadata = {
   metadata?: Record<string, unknown>;
 };
 
+// Input schema — mirrors the Zigflow DSL `input.schema:` block.
+// `document` is a raw JSON Schema object; the Studio preserves it as-is.
+export type WorkflowSchema = {
+  format: string;
+  document: Record<string, unknown>;
+};
+
+export type WorkflowInput = {
+  schema: WorkflowSchema;
+};
+
 export type WorkflowFile = {
   document: DocumentMetadata;
+  input: WorkflowInput;
   workflows: Record<string, NamedWorkflow>;
   order: string[]; // stable ordering of named workflows
 };

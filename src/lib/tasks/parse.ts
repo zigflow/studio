@@ -66,6 +66,8 @@ import type {
   TryNode,
   WaitConfig,
   WorkflowFile,
+  WorkflowInput,
+  WorkflowSchema,
 } from './model';
 import { ZIGFLOW_ID_KEY } from './model';
 
@@ -121,6 +123,20 @@ export function parseWorkflowFile(
 
   const doEntries = (raw['do'] as RawEntry[]) ?? [];
 
+  // Parse input.schema — default when absent.
+  const rawInput = raw['input'] as Record<string, unknown> | undefined;
+  const rawSchema = rawInput?.['schema'] as Record<string, unknown> | undefined;
+  const schema: WorkflowSchema = rawSchema
+    ? {
+        format: String(rawSchema['format'] ?? 'json'),
+        document: (rawSchema['document'] ?? {
+          type: 'object',
+          properties: {},
+        }) as Record<string, unknown>,
+      }
+    : { format: 'json', document: { type: 'object', properties: {} } };
+  const input: WorkflowInput = { schema };
+
   const ctx: ParseCtx = { modified: false, newFormat: false };
 
   // Detect format: new format if every entry's value has a `do:` key.
@@ -133,12 +149,12 @@ export function parseWorkflowFile(
 
   if (isNewFormat) {
     ctx.newFormat = true;
-    const workflowFile = parseNewFormat(doEntries, document, ctx);
+    const workflowFile = parseNewFormat(doEntries, document, input, ctx);
     return { workflowFile, modified: ctx.modified };
   }
 
   // Old format: flat steps with hoisted sub-graph entries.
-  return parseOldFormat(doEntries, document, ctx);
+  return parseOldFormat(doEntries, document, input, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -154,6 +170,7 @@ export function parseWorkflowFile(
 function parseNewFormat(
   doEntries: RawEntry[],
   document: DocumentMetadata,
+  input: WorkflowInput,
   ctx: ParseCtx,
 ): WorkflowFile {
   const workflows: Record<string, NamedWorkflow> = {};
@@ -182,7 +199,7 @@ function parseNewFormat(
     order.push(id);
   }
 
-  return { document, workflows, order };
+  return { document, input, workflows, order };
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +213,7 @@ function parseNewFormat(
 function parseOldFormat(
   doEntries: RawEntry[],
   document: DocumentMetadata,
+  input: WorkflowInput,
   ctx: ParseCtx,
 ): ParseResult {
   // Build a flat map of all named entries for hoisted branch resolution.
@@ -220,6 +238,7 @@ function parseOldFormat(
 
   const workflowFile: WorkflowFile = {
     document,
+    input,
     workflows: { [workflowId]: workflow },
     order: [workflowId],
   };

@@ -73,6 +73,9 @@ export function createWorkflowFile(document: DocumentMetadata): WorkflowFile {
   };
   return {
     document,
+    input: {
+      schema: { format: 'json', document: { type: 'object', properties: {} } },
+    },
     workflows: { [id]: workflow },
     order: [id],
   };
