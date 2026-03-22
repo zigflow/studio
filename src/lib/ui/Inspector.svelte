@@ -476,7 +476,7 @@
     {/if}
 
     <!-- Common fields: if + metadata — present on all node types -->
-    <CommonFields {node} onupdate={(n) => onupdate?.(n)} />
+    <CommonFields {node} {inputPaths} onupdate={(n) => onupdate?.(n)} />
 
     <div class="move-row">
       <button

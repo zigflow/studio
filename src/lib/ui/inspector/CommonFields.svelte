@@ -18,6 +18,7 @@
   import { t } from '$lib/i18n/index.svelte';
   import type { AssignmentValue, Node } from '$lib/tasks/model';
   import { ZIGFLOW_ID_KEY } from '$lib/tasks/model';
+  import ValueSourceSelector from '$lib/ui/ValueSourceSelector.svelte';
 
   import {
     type ValueOverride,
@@ -29,9 +30,10 @@
   interface Props {
     node: Node;
     onupdate: (node: Node) => void;
+    inputPaths?: string[];
   }
 
-  let { node, onupdate }: Props = $props();
+  let { node, onupdate, inputPaths = [] }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // `if` field
@@ -219,15 +221,12 @@
 
   <!-- if -->
   <div class="field-row">
-    <label class="field-label" for="common-if-input">
-      {t('inspector.common.if.label')}
-    </label>
-    <input
-      id="common-if-input"
-      class="field-input"
-      type="text"
+    <p class="field-label">{t('inspector.common.if.label')}</p>
+    <ValueSourceSelector
       value={ifValue}
-      oninput={(e) => handleIfChange(e.currentTarget.value)}
+      {inputPaths}
+      ariaLabel={t('inspector.common.if.label')}
+      onchange={(v) => handleIfChange(v)}
     />
   </div>
 
@@ -342,24 +341,6 @@
     font-weight: 500;
     color: #666;
     margin: 0 0 0.3rem;
-  }
-
-  .field-input {
-    width: 100%;
-    padding: 0.2rem 0.375rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.78rem;
-    font-family: monospace;
-    color: #111;
-    background: #fff;
-    box-sizing: border-box;
-  }
-
-  .field-input:focus {
-    outline: none;
-    border-color: #1a56cc;
-    box-shadow: 0 0 0 2px rgba(26, 86, 204, 0.15);
   }
 
   .meta-list {
