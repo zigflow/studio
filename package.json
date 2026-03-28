@@ -16,6 +16,7 @@
     "prepare": "svelte-kit sync || echo ''",
     "start": "node build",
     "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report --host 0.0.0.0",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug"
