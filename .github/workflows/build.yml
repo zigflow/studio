@@ -65,6 +65,24 @@ jobs:
       - name: Checking
         run: npm run check
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
   helm:
     runs-on: ubuntu-latest
     steps:
@@ -151,6 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - commitlint
+      - e2e
       - helm
       - pre-commit
       - test

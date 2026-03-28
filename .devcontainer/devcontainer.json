@@ -16,7 +16,7 @@
     }
   },
   "postCreateCommand": {
-    "playwright": "npx --yes playwright install --with-deps"
+    "playwright": "npx --yes playwright install --with-deps chromium"
   },
   "containerEnv": {
     "PLAYWRIGHT_HTML_HOST": "0.0.0.0",
@@ -24,6 +24,7 @@
     "HOST": "0.0.0.0"
   },
   "forwardPorts": [
-    5173
+    5173,
+    9323
   ]
 }
