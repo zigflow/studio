@@ -45,7 +45,7 @@ spec:
               value: "0.0.0.0"
             - name: PORT
               value: {{ .Values.service.port | quote }}
-            - name: PUBLIC_WORKFLOWS_DATA_DIR
+            - name: PUBLIC_WORKFLOWS_DIR
               value: {{ .Values.dataDir | quote }}
           {{- with .Values.envvars }}
             {{- toYaml . | nindent 12 }}
