@@ -17,7 +17,7 @@ do:
       do:
         - greet:
             set:
-              message: Hello, World!
+              message: ''
             metadata:
               __zigflow_id: 15b9ba59-d039-46cd-9d88-0b4adeae4d3d
         - pause:

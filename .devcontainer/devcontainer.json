@@ -2,9 +2,11 @@
   "image": "ghcr.io/mrsimonemms/devcontainers/full",
   "name": "devcontainer",
   "features": {
-    "ghcr.io/dhoeric/features/trivy:1": {},
+    "ghcr.io/jasonthedeveloper/features/trivy:1": {},
     "ghcr.io/devcontainers-extra/features/go-task:1": {},
-    "ghcr.io/rio/features/skaffold:2": {}
+    "ghcr.io/rio/features/skaffold:2": {},
+    "ghcr.io/devcontainers-extra/features/temporal-cli:1": {},
+    "ghcr.io/mrsimonemms/devcontainers/zigflow:1": {}
   },
   "customizations": {
     "vscode": {

@@ -31,9 +31,10 @@
     node: Node;
     onupdate: (node: Node) => void;
     inputPaths?: string[];
+    schemaDocument?: Record<string, unknown>;
   }
 
-  let { node, onupdate, inputPaths = [] }: Props = $props();
+  let { node, onupdate, inputPaths = [], schemaDocument }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // `if` field
@@ -225,6 +226,7 @@
     <ValueSourceSelector
       value={ifValue}
       {inputPaths}
+      {schemaDocument}
       ariaLabel={t('inspector.common.if.label')}
       onchange={(v) => handleIfChange(v)}
     />

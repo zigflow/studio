@@ -24,6 +24,7 @@ import {
   detectSource,
   extractInputPaths,
   parseInputPath,
+  resolveInputPathType,
 } from '../src/lib/ui/value-source';
 
 // ---------------------------------------------------------------------------
@@ -263,5 +264,102 @@ test.describe('value storage round-trips', () => {
     expect(detectSource(expr)).toBe('expression');
     // An expression is stored verbatim — no transformation.
     expect(expr).toBe('${ $input.foo + $context.bar }');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveInputPathType
+// ---------------------------------------------------------------------------
+
+const SCHEMA = {
+  type: 'object',
+  properties: {
+    fast: { type: 'boolean' },
+    count: { type: 'number' },
+    userId: { type: 'string' },
+    hello: {
+      type: 'object',
+      properties: {
+        world: { type: 'boolean' },
+        deep: {
+          type: 'object',
+          properties: {
+            val: { type: 'number' },
+          },
+        },
+      },
+    },
+    arr: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          score: { type: 'number' },
+        },
+      },
+    },
+    tags: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+  },
+};
+
+test.describe('resolveInputPathType', () => {
+  test('top-level boolean', () => {
+    expect(resolveInputPathType(SCHEMA, 'fast')).toBe('boolean');
+  });
+
+  test('top-level number', () => {
+    expect(resolveInputPathType(SCHEMA, 'count')).toBe('number');
+  });
+
+  test('top-level string', () => {
+    expect(resolveInputPathType(SCHEMA, 'userId')).toBe('string');
+  });
+
+  test('object node itself returns object', () => {
+    expect(resolveInputPathType(SCHEMA, 'hello')).toBe('object');
+  });
+
+  test('nested object property', () => {
+    expect(resolveInputPathType(SCHEMA, 'hello.world')).toBe('boolean');
+  });
+
+  test('deeply nested object property', () => {
+    expect(resolveInputPathType(SCHEMA, 'hello.deep.val')).toBe('number');
+  });
+
+  test('array node itself returns array', () => {
+    expect(resolveInputPathType(SCHEMA, 'arr')).toBe('array');
+  });
+
+  test('array of object: nested string property', () => {
+    expect(resolveInputPathType(SCHEMA, 'arr.id')).toBe('string');
+  });
+
+  test('array of object: nested number property', () => {
+    expect(resolveInputPathType(SCHEMA, 'arr.score')).toBe('number');
+  });
+
+  test('array of primitive with nested path returns null', () => {
+    expect(resolveInputPathType(SCHEMA, 'tags.name')).toBeNull();
+  });
+
+  test('unknown top-level path returns null', () => {
+    expect(resolveInputPathType(SCHEMA, 'missing')).toBeNull();
+  });
+
+  test('unknown nested path returns null', () => {
+    expect(resolveInputPathType(SCHEMA, 'hello.missing')).toBeNull();
+  });
+
+  test('empty path returns null', () => {
+    expect(resolveInputPathType(SCHEMA, '')).toBeNull();
+  });
+
+  test('empty schema returns null', () => {
+    expect(resolveInputPathType({}, 'fast')).toBeNull();
   });
 });

@@ -36,9 +36,10 @@
     node: Node;
     onupdate: (node: Node) => void;
     inputPaths?: string[];
+    schemaDocument?: Record<string, unknown>;
   }
 
-  let { node, onupdate, inputPaths = [] }: Props = $props();
+  let { node, onupdate, inputPaths = [], schemaDocument }: Props = $props();
 
   // Safe narrowing: registry guarantees this editor only receives set nodes.
   const setNode = $derived(node as TaskNode);
@@ -235,6 +236,7 @@
               <ValueSourceSelector
                 value={val as string}
                 {inputPaths}
+                {schemaDocument}
                 ariaLabel={t('inspector.set.valueLabel')}
                 onchange={(v) => handleStringValueChange(i, key, v)}
               />

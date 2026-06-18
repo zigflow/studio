@@ -405,6 +405,13 @@
     }
   },
   "input": {
+    "type": {
+      "string": "string",
+      "number": "number",
+      "boolean": "boolean",
+      "object": "object",
+      "array": "array"
+    },
     "pageTitle": "Editing Input Schema",
     "backToEditor": "← Back to editor",
     "saving": "Saving…",

@@ -42,6 +42,8 @@ export interface NodeEditorProps {
   onupdate: (node: Node) => void;
   /** Flat dot-notation paths from the workflow input schema. Optional. */
   inputPaths?: string[];
+  /** Raw JSON Schema document for the workflow input. Optional. */
+  schemaDocument?: Record<string, unknown>;
 }
 
 // Cast is intentional: each editor declares a narrower Props type internally

@@ -59,6 +59,8 @@
     currentWorkflowName?: string;
     /** Flat dot-notation paths from the workflow input schema. */
     inputPaths?: string[];
+    /** Raw JSON Schema document for the workflow input. */
+    schemaDocument?: Record<string, unknown>;
   }
 
   let {
@@ -76,6 +78,7 @@
     workflows = [],
     currentWorkflowName = '',
     inputPaths = [],
+    schemaDocument,
   }: Props = $props();
 
   // ---------------------------------------------------------------------------
@@ -273,6 +276,7 @@
               <ValueSourceSelector
                 value={branch.condition ?? ''}
                 {inputPaths}
+                {schemaDocument}
                 ariaLabel={t('inspector.switch.condition')}
                 onchange={(v) =>
                   handleSwitchUpdate(
@@ -472,11 +476,21 @@
 
     <!-- Task-specific or structural property editor -->
     {#if NodeEditor}
-      <NodeEditor {node} {inputPaths} onupdate={(n) => onupdate?.(n)} />
+      <NodeEditor
+        {node}
+        {inputPaths}
+        {schemaDocument}
+        onupdate={(n) => onupdate?.(n)}
+      />
     {/if}
 
     <!-- Common fields: if + metadata — present on all node types -->
-    <CommonFields {node} {inputPaths} onupdate={(n) => onupdate?.(n)} />
+    <CommonFields
+      {node}
+      {inputPaths}
+      {schemaDocument}
+      onupdate={(n) => onupdate?.(n)}
+    />
 
     <div class="move-row">
       <button

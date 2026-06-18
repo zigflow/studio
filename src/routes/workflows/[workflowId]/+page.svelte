@@ -1015,6 +1015,7 @@
         workflows={inspectorWorkflows}
         currentWorkflowName={inspectorCurrentWorkflowName}
         inputPaths={inspectorInputPaths}
+        schemaDocument={workflowFile.input.schema.document}
       />
     </div>
   </div>

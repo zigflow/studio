@@ -31,6 +31,7 @@
     buildInputValue,
     detectSource,
     parseInputPath,
+    resolveInputPathType,
   } from './value-source';
 
   interface Props {
@@ -42,9 +43,20 @@
     onchange: (value: string) => void;
     /** Optional aria-label for the value input / select. */
     ariaLabel?: string;
+    /**
+     * Raw JSON Schema document from `workflowFile.input.schema.document`.
+     * When provided and source is `input`, a read-only type hint is shown.
+     */
+    schemaDocument?: Record<string, unknown>;
   }
 
-  let { value, inputPaths, onchange, ariaLabel = '' }: Props = $props();
+  let {
+    value,
+    inputPaths,
+    onchange,
+    ariaLabel = '',
+    schemaDocument,
+  }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // Derive initial source + inner value from the incoming stored value.
@@ -53,8 +65,8 @@
 
   // Initialize with defaults; $effect below sets real values on first run
   // and re-syncs whenever the parent `value` prop changes.
-  let source: ValueSource = $state('literal');
-  let innerValue: string = $state('');
+  let source = $state<ValueSource>('literal');
+  let innerValue = $state('');
 
   // Sync local state from the external `value` prop.
   // Only reads `value` (the prop) — no circular dependency.
@@ -63,6 +75,13 @@
     source = newSource;
     innerValue = newSource === 'input' ? parseInputPath(value) : value;
   });
+
+  // Read-only type hint: only shown when source is input and schema is available.
+  const typeHint = $derived(
+    source === 'input' && schemaDocument != null && innerValue !== ''
+      ? resolveInputPathType(schemaDocument, innerValue)
+      : null,
+  );
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -118,6 +137,11 @@
           <option value={path}>{path}</option>
         {/each}
       </select>
+      {#if typeHint !== null}
+        <span class="vss-type-hint" aria-hidden="true"
+          >({t(`input.type.${typeHint}`)})</span
+        >
+      {/if}
     {/if}
   {:else}
     <input
@@ -189,5 +213,12 @@
     color: #999;
     font-style: italic;
     padding: 0.2rem 0;
+  }
+
+  .vss-type-hint {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    color: #888;
+    white-space: nowrap;
   }
 </style>

@@ -23,9 +23,10 @@
     node: Node;
     onupdate: (node: Node) => void;
     inputPaths?: string[];
+    schemaDocument?: Record<string, unknown>;
   }
 
-  let { node, onupdate, inputPaths = [] }: Props = $props();
+  let { node, onupdate, inputPaths = [], schemaDocument }: Props = $props();
 
   // Safe narrowing: registry guarantees this editor only receives loop nodes.
   const loopNode = $derived(node as LoopNode);
@@ -60,6 +61,7 @@
       <ValueSourceSelector
         value={loopNode.in}
         {inputPaths}
+        {schemaDocument}
         ariaLabel={t('inspector.loop.collection')}
         onchange={(v) => onupdate({ ...loopNode, in: v })}
       />

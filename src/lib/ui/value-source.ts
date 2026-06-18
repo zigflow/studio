@@ -86,6 +86,90 @@ export function buildInputValue(path: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Resolve path type from schema document
+// ---------------------------------------------------------------------------
+
+/**
+ * The subset of JSON Schema primitive types exposed as input type hints.
+ */
+export type InputPathType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'object'
+  | 'array';
+
+/**
+ * Resolve the JSON Schema type of a dot-notation path within a schema document.
+ *
+ * Traversal rules:
+ * - Each segment looks up `properties[segment]` on the current node.
+ * - If a segment's type is `object`, traversal continues into that node.
+ * - If a segment's type is `array` and items has `type: 'object'`, traversal
+ *   continues into `items` for remaining segments.
+ * - If a segment's type is `array` and it is the last segment, returns `'array'`.
+ * - Any unsupported shape or missing key returns `null`.
+ *
+ * Does NOT implement full JSON Schema — only handles the subset produced by
+ * `buildSchemaDocument`.
+ */
+export function resolveInputPathType(
+  doc: Record<string, unknown>,
+  path: string,
+): InputPathType | null {
+  if (!path) return null;
+
+  const segments = path.split('.');
+  let current: Record<string, unknown> = doc;
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i]!;
+    const props = current['properties'];
+    if (typeof props !== 'object' || props === null) return null;
+
+    const field = (props as Record<string, unknown>)[segment];
+    if (typeof field !== 'object' || field === null) return null;
+
+    const fieldObj = field as Record<string, unknown>;
+    const isLast = i === segments.length - 1;
+
+    if (isLast) {
+      const ft = fieldObj['type'];
+      if (
+        ft === 'string' ||
+        ft === 'number' ||
+        ft === 'boolean' ||
+        ft === 'object' ||
+        ft === 'array'
+      ) {
+        return ft;
+      }
+      return null;
+    }
+
+    // Not the last segment: traverse deeper.
+    if (fieldObj['type'] === 'object') {
+      current = fieldObj;
+    } else if (fieldObj['type'] === 'array') {
+      const items = fieldObj['items'];
+      if (
+        typeof items === 'object' &&
+        items !== null &&
+        (items as Record<string, unknown>)['type'] === 'object'
+      ) {
+        current = items as Record<string, unknown>;
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Extract paths from schema document
 // ---------------------------------------------------------------------------
 
