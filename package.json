@@ -11,8 +11,8 @@
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
     "start": "next start",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest --passWithNoTests"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@jsonforms/core": "^3.8.0",

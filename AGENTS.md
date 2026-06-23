@@ -34,6 +34,71 @@ The authoritative output is always valid Zigflow workflow YAML.
 
 ---
 
+## User-visible text
+
+All user-visible text must be stored in translation resources.
+
+Do not introduce user-visible strings directly in:
+
+* React components
+* NextJS routes
+* Hooks
+* Utilities
+* Workflow Builder node definitions
+* Validation messages shown to users
+
+Instead, add the text to:
+
+```text
+messages/en.json
+```
+
+and reference it from code.
+
+Example:
+
+```json
+{
+  "yamlPreview": {
+    "title": "Zigflow YAML"
+  }
+}
+```
+
+Avoid:
+
+```tsx
+<h2>Zigflow YAML</h2>
+```
+
+Prefer:
+
+```tsx
+<h2>{messages.yamlPreview.title}</h2>
+```
+
+Rationale:
+
+* Enables future i18n without large-scale refactoring
+* Keeps user-visible copy discoverable
+* Encourages consistent terminology across the application
+* Makes translation work incremental rather than a future migration project
+
+Current policy:
+
+* Only `messages/en.json` is required
+* Additional locales are not required yet
+* Do not introduce an i18n framework solely for this purpose
+* Direct JSON imports are acceptable until a dedicated i18n solution is adopted
+
+Exceptions:
+
+* User-provided data
+* Debug-only console output
+* Test fixtures where the text itself is being tested
+
+---
+
 ## Architecture principles
 
 Workflow Builder provides:

@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import ZigflowYamlPreview from '@/components/ZigflowYamlPreview';
-import WorkflowBuilderClient from '@/components/lib/workflow-builder-client';
+export type ZigflowTask = Record<string, unknown>;
 
-export default function Page() {
-  return (
-    <div className="grid h-screen grid-cols-[1fr_minmax(400px,25vw)] overflow-hidden">
-      <main className="relative min-w-0">
-        <WorkflowBuilderClient name="My Workflow" />
-      </main>
+export type ZigflowWorkflowDocument = {
+  dsl: string;
+};
 
-      <aside className="flex flex-col border-l bg-white">
-        <ZigflowYamlPreview />
-      </aside>
-    </div>
-  );
-}
+export type ZigflowWorkflow = {
+  document: ZigflowWorkflowDocument;
+  do: ZigflowTask[];
+};

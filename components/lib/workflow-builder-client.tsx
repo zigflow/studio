@@ -35,10 +35,10 @@ const integration: WorkflowBuilderIntegration = {
   strategy: 'localStorage',
 };
 
-export default function WorkflowBuilderClient() {
+export default function WorkflowBuilderClient({ name }: { name: string }) {
   return (
     <WorkflowBuilderRoot
-      name="My Workflow"
+      name={name}
       layoutDirection="DOWN"
       nodeTypes={nodeTypes}
       integration={integration}
