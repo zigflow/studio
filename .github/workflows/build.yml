@@ -1,0 +1,302 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+  packages: write
+  id-token: write
+  pull-requests: read
+  security-events: write
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # fetch-depth is required
+
+      - uses: wagoid/commitlint-github-action@v6
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Required for pre-commit to be able scan history
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - run: npm ci
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+
+      - uses: pre-commit/action@v3.0.1
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Linting
+        run: npm run lint
+
+  # Generate metadata shared across all build jobs
+  metadata:
+    runs-on: ubuntu-latest
+    needs:
+      - commitlint
+      - pre-commit
+      - test
+    outputs:
+      is_tag: ${{ steps.branch-name.outputs.is_tag }}
+      tag: ${{ steps.branch-name.outputs.tag }}
+      current_branch: ${{ steps.branch-name.outputs.current_branch }}
+      version: ${{ steps.metadata.outputs.version }}
+      commit_id: ${{ steps.metadata.outputs.commit_id }}
+      git_repo: ${{ steps.metadata.outputs.git_repo }}
+      push: ${{ steps.metadata.outputs.push }}
+      platforms: ${{ steps.metadata.outputs.platforms }}
+      is_prerelease: ${{ steps.metadata.outputs.is_prerelease }}
+    steps:
+      - name: Get branch names
+        id: branch-name
+        uses: tj-actions/branch-names@v9
+        with:
+          strip_tag_prefix: v
+
+      - name: Generate metadata
+        id: metadata
+        run: |
+          if [ "${{ steps.branch-name.outputs.is_tag }}" = "true"  ];
+          then
+            echo "version=${{ steps.branch-name.outputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "platforms=[\"linux/amd64\",\"linux/arm64\"]" >> "$GITHUB_OUTPUT"
+            echo "push=true" >> "$GITHUB_OUTPUT"
+
+            # Detect if tag is a pre-release (contains -rc, -beta, -alpha, etc.)
+            TAG="${{ steps.branch-name.outputs.tag }}"
+            if echo "$TAG" | grep -qE -- '-(rc|beta|alpha|pre)'; then
+              echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "version=development" >> "$GITHUB_OUTPUT"
+            echo "platforms=[\"linux/amd64\"]" >> "$GITHUB_OUTPUT"
+            echo "push=${{ github.ref == 'refs/heads/main' }}" >> "$GITHUB_OUTPUT"
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "commit_id=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "git_repo=github.com/${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
+
+  # Build studio Docker images in parallel by architecture
+  docker_studio:
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    needs: metadata
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.metadata.outputs.platforms) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GitHub Container Registry
+        if: needs.metadata.outputs.push == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate platform-specific tag
+        id: tag
+        run: |
+          PLATFORM_TAG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "platform_tag=${PLATFORM_TAG}" >> "$GITHUB_OUTPUT"
+
+          # Image name with SHA-based tag for this platform
+          echo "image_ref=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}-${PLATFORM_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          build-args: |
+            GIT_COMMIT=${{ needs.metadata.outputs.commit_id }}
+            GIT_REPO=${{ needs.metadata.outputs.git_repo }}
+            VERSION=${{ needs.metadata.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.platform }}
+          load: ${{ needs.metadata.outputs.push == 'false' }}
+          push: ${{ needs.metadata.outputs.push == 'true' }}
+          tags: ${{ steps.tag.outputs.image_ref }}
+          # Save as artifact for non-main branches
+
+      - name: Pull images
+        if: ${{ needs.metadata.outputs.push == 'true' }}
+        run: docker pull ${{ steps.tag.outputs.image_ref }}
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.tag.outputs.image_ref }}
+          format: sarif
+          output: trivy-zigflow-${{ steps.tag.outputs.platform_tag }}.sarif
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-zigflow-${{ steps.tag.outputs.platform_tag }}.sarif
+
+  # Combine architecture-specific images into a multi-arch manifest
+  docker_studio_manifest:
+    runs-on: ubuntu-latest
+    if: needs.metadata.outputs.push == 'true'
+    needs:
+      - metadata
+      - docker_studio
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.2
+
+      - name: Install Syft
+        uses: jaxxstorm/action-install-gh-release@v3.0.0
+        with:
+          repo: anchore/syft
+
+      - name: Generate manifest tags and create manifest
+        run: |
+          REPO_LOWER="ghcr.io/${GITHUB_REPOSITORY,,}"
+
+          # Build list of source images based on platforms
+          SOURCE_IMAGES="${REPO_LOWER}:${GITHUB_SHA}-linux-amd64"
+
+          # Add arm64 only if it was built (tags only)
+          if [ "${{ needs.metadata.outputs.is_tag }}" = "true"  ];
+          then
+            SOURCE_IMAGES="${SOURCE_IMAGES} ${REPO_LOWER}:${GITHUB_SHA}-linux-arm64"
+          fi
+
+          # Determine target tags based on ref type
+          if [ "${{ needs.metadata.outputs.is_tag }}" = "true"  ];
+          then
+            # For tags: choose latest/prerelease + version tag + SHA based on pre-release status
+            if [ "${{ needs.metadata.outputs.is_prerelease }}" = "true" ]; then
+              TARGET_TAGS="${REPO_LOWER}:prerelease ${REPO_LOWER}:${{ needs.metadata.outputs.tag }} ${REPO_LOWER}:${GITHUB_SHA}"
+            else
+              TARGET_TAGS="${REPO_LOWER}:latest ${REPO_LOWER}:${{ needs.metadata.outputs.tag }} ${REPO_LOWER}:${GITHUB_SHA}"
+            fi
+          elif [ "${{ github.ref }}" = "refs/heads/main"  ];
+          then
+            # For main branch: branch-main + SHA
+            TARGET_TAGS="${REPO_LOWER}:branch-main ${REPO_LOWER}:${GITHUB_SHA}"
+          else
+            # For other branches: branch-<name> + SHA
+            BRANCH="${{ needs.metadata.outputs.current_branch }}"
+            BRANCH_TAG="branch-${BRANCH//\//-}"
+            BRANCH_TAG="${BRANCH_TAG,,}"
+            TARGET_TAGS="${REPO_LOWER}:${BRANCH_TAG} ${REPO_LOWER}:${GITHUB_SHA}"
+          fi
+
+          # Create manifest for each target tag
+          for TAG in ${TARGET_TAGS}; do
+            echo "Creating manifest for ${TAG} from: ${SOURCE_IMAGES}"
+            docker buildx imagetools create -t "${TAG}" ${SOURCE_IMAGES}
+
+            cosign sign --yes "${TAG}"
+            syft "${TAG}" -o cyclonedx-json > sbom.json
+            cosign attach sbom --sbom sbom.json "${TAG}"
+            cosign sign --yes --attachment sbom "${TAG}"
+          done
+
+  # Build and publish Helm chart in parallel
+  helm_chart:
+    runs-on: ubuntu-latest
+    needs: metadata
+    if: needs.metadata.outputs.is_tag == 'true'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ">=1.25.0"
+
+      - name: Prepare chart README
+        run: |
+          go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest
+          helm-docs
+          yq -i '.version = "${{ needs.metadata.outputs.tag }}"' charts/studio/Chart.yaml
+          yq -i '.annotations."org.opencontainers.image.documentation" = "https://github.com/zigflow/studio/blob/${{ needs.metadata.outputs.tag }}/charts/studio/README.md"' charts/studio/Chart.yaml
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v7
+        id: gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      # Helm requires the legacy GPG format
+      # @link https://helm.sh/docs/topics/provenance/#the-workflow
+      - name: Convert GPG v2 key
+        run: |
+          gpg --export > ~/.gnupg/pubring.gpg
+          gpg --batch --pinentry-mode loopback --yes --passphrase '${{ secrets.GPG_PASSPHRASE }}' --export-secret-key > ~/.gnupg/secring.gpg
+
+      - name: Publish Helm chart
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: studio
+          registry: ghcr.io
+          repository: ${{ github.repository_owner }}/charts
+          tag: ${{ needs.metadata.outputs.tag }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+          sign: true
+          signing_key: ${{ steps.gpg.outputs.name }}
+          signing_passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          update_dependencies: true
