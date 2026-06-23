@@ -13,8 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import WorkflowBuilderClient from '@/components/lib/workflow-builder-client';
-
-export default function Page() {
-  return <WorkflowBuilderClient />;
-}
+import '@testing-library/jest-dom/vitest';

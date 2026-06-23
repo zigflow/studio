@@ -13,8 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import WorkflowBuilderClient from '@/components/lib/workflow-builder-client';
+import { defineConfig } from 'vitest/config';
 
-export default function Page() {
-  return <WorkflowBuilderClient />;
-}
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./test/setup.ts'],
+  },
+});
