@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ARG ZIGFLOW_IMAGE=ghcr.io/zigflow/zigflow:latest
+FROM ${ZIGFLOW_IMAGE} AS zigflow
+
 FROM golang AS builder
 ARG GIT_COMMIT
 ARG GIT_REPO="github.com/zigflow/studio"
@@ -20,10 +23,13 @@ ARG VERSION
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOCACHE=/go/.cache
+ENV PATH=${PATH}:/opt/bin
 ENV PROJECT_NAME="${PROJECT_NAME}"
 USER 1000
 WORKDIR /go/app
 COPY --chown=1000:1000 . .
+COPY --from=zigflow /app/app /opt/bin/zigflow
+RUN zigflow version
 RUN go build \
   -ldflags \
   "-w -s -X $GIT_REPO/cmd.Version=$VERSION -X $GIT_REPO/cmd.GitCommit=$GIT_COMMIT" \
@@ -31,12 +37,14 @@ RUN go build \
 COPY --from=cosmtrek/air /go/bin/air /go/bin/air
 ENTRYPOINT [ "air" ]
 
-FROM scratch
+FROM cgr.dev/chainguard/static
 ARG GIT_COMMIT
 ARG VERSION
 ENV GIT_COMMIT="${GIT_COMMIT}"
+ENV PATH=${PATH}:/opt/bin
 ENV VERSION="${VERSION}"
 WORKDIR /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /go/bin/app /app
+COPY --from=zigflow /app/app /opt/bin/zigflow
 ENTRYPOINT [ "/app/app" ]

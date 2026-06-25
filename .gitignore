@@ -10,3 +10,5 @@ Thumbs.db
 go.work.sum
 
 .claude
+
+generated.go

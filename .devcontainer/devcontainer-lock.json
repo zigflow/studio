@@ -10,6 +10,11 @@
       "resolved": "ghcr.io/guiyomh/features/goreleaser@sha256:eba46940bb2064c6595f0d724b6fbf9f880a23306f2be65de6555173d7ff7c92",
       "integrity": "sha256:eba46940bb2064c6595f0d724b6fbf9f880a23306f2be65de6555173d7ff7c92"
     },
+    "ghcr.io/mrsimonemms/devcontainers/air:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/mrsimonemms/devcontainers/air@sha256:049fd008b735ea508cb58f99d77e2a8918ad6c28792a9bbbf06813a498502782",
+      "integrity": "sha256:049fd008b735ea508cb58f99d77e2a8918ad6c28792a9bbbf06813a498502782"
+    },
     "ghcr.io/mrsimonemms/devcontainers/cobra-cli:1": {
       "version": "1.0.0",
       "resolved": "ghcr.io/mrsimonemms/devcontainers/cobra-cli@sha256:e5f61d4c00e066815dc98ce8f949aeded739b97f8f69c234ba33d1f07be8c081",

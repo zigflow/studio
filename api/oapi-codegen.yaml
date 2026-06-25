@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/v2.7.1/configuration-schema.json
+package: api
+output: generated.go
+generate:
+  # std-http-server uses the Go 1.22+ net/http ServeMux, so there is no
+  # third-party router dependency to lock us in.
+  std-http-server: true
+  # strict-server decouples handler logic from the HTTP transport, so we can
+  # swap the routing layer (net/http, chi, ...) later without touching handlers.
+  strict-server: true
+  models: true

@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: Zigflow Studio API
+  description: REST API for Zigflow Studio, a drag and drop UI for building Temporal workflows.
+  version: 0.0.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+servers:
+  - url: /
+paths:
+  /api/config:
+    get:
+      operationId: getConfig
+      summary: Get application and runtime configuration
+      description: Returns basic application and runtime configuration for the frontend.
+      responses:
+        "200":
+          description: The current application configuration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+components:
+  schemas:
+    Config:
+      type: object
+      description: Basic application and runtime configuration.
+      required:
+        - appName
+        - version
+      properties:
+        appName:
+          type: string
+          description: The human-readable application name.
+          example: Zigflow Studio
+        version:
+          type: string
+          description: The running application version.
+          example: 0.0.0

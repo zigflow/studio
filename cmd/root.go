@@ -58,6 +58,7 @@ func newRootCmd() *cobra.Command {
 	)
 
 	rootCmd.AddCommand(
+		newRunCmd(),
 		newVersionCmd(),
 	)
 
