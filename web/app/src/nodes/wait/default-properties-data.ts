@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WorkflowBuilder } from '@workflowbuilder/sdk';
-import '@workflowbuilder/sdk/style.css';
+import type { NodeDataProperties } from '@workflowbuilder/sdk';
 
-import { nodeTypes } from '../nodes';
+import { dataFlowDefaults } from '../shared/data-flow';
+import type { WaitSchema } from './schema';
 
-export default function App() {
-  return (
-    <WorkflowBuilder.Root
-      name="my-workflow"
-      layoutDirection="DOWN"
-      nodeTypes={nodeTypes}
-    ></WorkflowBuilder.Root>
-  );
-}
+export const defaultPropertiesData: NodeDataProperties<WaitSchema> = {
+  label: 'Wait',
+  description: '',
+  durationAmount: 5,
+  durationUnit: 'seconds',
+  ...dataFlowDefaults,
+};

@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WorkflowBuilder } from '@workflowbuilder/sdk';
-import '@workflowbuilder/sdk/style.css';
 
-import { nodeTypes } from '../nodes';
-
-export default function App() {
-  return (
-    <WorkflowBuilder.Root
-      name="my-workflow"
-      layoutDirection="DOWN"
-      nodeTypes={nodeTypes}
-    ></WorkflowBuilder.Root>
-  );
-}
+export const durationUnitOptions = {
+  seconds: { label: 'Seconds', value: 'seconds' },
+  minutes: { label: 'Minutes', value: 'minutes' },
+  hours: { label: 'Hours', value: 'hours' },
+  days: { label: 'Days', value: 'days' },
+} as const;

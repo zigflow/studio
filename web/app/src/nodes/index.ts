@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WorkflowBuilder } from '@workflowbuilder/sdk';
-import '@workflowbuilder/sdk/style.css';
+import type { PaletteItemOrGroup } from '@workflowbuilder/sdk';
 
-import { nodeTypes } from '../nodes';
+import { wait } from './wait';
 
-export default function App() {
-  return (
-    <WorkflowBuilder.Root
-      name="my-workflow"
-      layoutDirection="DOWN"
-      nodeTypes={nodeTypes}
-    ></WorkflowBuilder.Root>
-  );
-}
+export const nodeTypes: PaletteItemOrGroup[] = [
+  {
+    label: 'Zigflow',
+    isOpen: true,
+    groupItems: [wait],
+  },
+];

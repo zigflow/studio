@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WorkflowBuilder } from '@workflowbuilder/sdk';
-import '@workflowbuilder/sdk/style.css';
+import { type NodeSchema, sharedProperties } from '@workflowbuilder/sdk';
 
-import { nodeTypes } from '../nodes';
+import { dataFlowProperties } from '../shared/data-flow';
+import { durationUnitOptions } from './select-options';
 
-export default function App() {
-  return (
-    <WorkflowBuilder.Root
-      name="my-workflow"
-      layoutDirection="DOWN"
-      nodeTypes={nodeTypes}
-    ></WorkflowBuilder.Root>
-  );
-}
+export const schema = {
+  type: 'object',
+  properties: {
+    ...sharedProperties,
+    durationAmount: {
+      type: 'number',
+    },
+    durationUnit: {
+      type: 'string',
+      options: Object.values(durationUnitOptions),
+    },
+    ...dataFlowProperties,
+  },
+} satisfies NodeSchema;
+
+export type WaitSchema = typeof schema;

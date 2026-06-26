@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WorkflowBuilder } from '@workflowbuilder/sdk';
-import '@workflowbuilder/sdk/style.css';
+import type { PaletteItem } from '@workflowbuilder/sdk';
 
-import { nodeTypes } from '../nodes';
+import { defaultPropertiesData } from './default-properties-data';
+import { type WaitSchema, schema } from './schema';
+import { uischema } from './uischema';
 
-export default function App() {
-  return (
-    <WorkflowBuilder.Root
-      name="my-workflow"
-      layoutDirection="DOWN"
-      nodeTypes={nodeTypes}
-    ></WorkflowBuilder.Root>
-  );
-}
+export const wait: PaletteItem<WaitSchema> = {
+  label: 'wait',
+  description: 'durable temporal wait time',
+  type: 'zigflow/wait',
+  icon: 'Timer',
+  defaultPropertiesData,
+  schema,
+  uischema,
+};
