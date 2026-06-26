@@ -10,7 +10,9 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": [],
+      "extensions": [
+        "esbenp.prettier-vscode"
+      ],
       "settings": {}
     }
   },
@@ -22,6 +24,7 @@
     "GIT_REPO": "github.com/zigflow/studio"
   },
   "forwardPorts": [
+    5173,
     8080,
     8233
   ]

@@ -1,5 +1,3 @@
-//go:build !prod
-
 /*
  * Copyright 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
  *
@@ -15,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 
-package app
+import App from './app/App.tsx';
+import './index.css';
 
-import (
-	"net/http"
-)
-
-func Mount(prefix string) (http.Handler, error) {
-	return nil, nil
-}
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

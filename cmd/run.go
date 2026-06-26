@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	gh "github.com/mrsimonemms/golang-helpers"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -32,10 +33,16 @@ func newRunCmd() *cobra.Command {
 		Use:   "run",
 		Short: "Run the Zigflow Studio HTTP server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := server.New(server.Options{
+			s, err := server.New(server.Options{
 				Address: opts.Address,
 				Version: Version,
 			})
+			if err != nil {
+				return gh.FatalError{
+					Cause: err,
+					Msg:   "Error configuring HTTP server",
+				}
+			}
 
 			log.Info().
 				Str("address", opts.Address).

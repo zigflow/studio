@@ -15,6 +15,21 @@
 ARG ZIGFLOW_IMAGE=ghcr.io/zigflow/zigflow:latest
 FROM ${ZIGFLOW_IMAGE} AS zigflow
 
+FROM node:lts AS webapp
+ARG GIT_COMMIT
+ARG VERSION
+USER node
+WORKDIR /home/node
+ENV GIT_COMMIT="${GIT_COMMIT}"
+ENV VERSION="${VERSION}"
+COPY --chown=node:node web/app .
+ENV HOST=0.0.0.0
+ENV PORT=5173
+RUN npm ci \
+  && npm run build
+EXPOSE 5173
+CMD [ "npm", "run", "dev" ]
+
 FROM golang AS builder
 ARG GIT_COMMIT
 ARG GIT_REPO="github.com/zigflow/studio"
@@ -29,8 +44,9 @@ USER 1000
 WORKDIR /go/app
 COPY --chown=1000:1000 . .
 COPY --from=zigflow /app/app /opt/bin/zigflow
+COPY --from=webapp /home/node/dist ./web/app/dist
 RUN zigflow version
-RUN go build \
+RUN go build -tags prod \
   -ldflags \
   "-w -s -X $GIT_REPO/cmd.Version=$VERSION -X $GIT_REPO/cmd.GitCommit=$GIT_COMMIT" \
   -o /go/bin/app

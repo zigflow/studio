@@ -4,6 +4,8 @@ before:
   hooks:
     # You may remove this if you don't use go modules.
     - go mod tidy
+    - npm --prefix web/app ci
+    - npm --prefix web/app run build
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
@@ -15,6 +17,8 @@ builds:
       - darwin
     ldflags:
       - -w -s -X {{ .Env.GIT_REPO }}/cmd.Version={{ .Version }} -X {{ .Env.GIT_REPO }}/cmd.GitCommit={{ .FullCommit }}
+    tags:
+      - prod
 archives:
   - format: binary
     # this name template makes the OS and Arch compatible with the results of uname.

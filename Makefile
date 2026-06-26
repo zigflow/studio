@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+BINARY_NAME = studio
+WEB_APP_DIR = web/app
+
+build:
+	@echo "Building ${BINARY_NAME}..."
+	@rm -f ${BINARY_NAME}
+	@npm --prefix ${WEB_APP_DIR} ci
+	@npm --prefix ${WEB_APP_DIR} run build
+	@go generate ./...
+	@go build -tags prod -o ${BINARY_NAME} .
+
+	@./${BINARY_NAME}
+
+	@echo "\nBinary saved to ${PWD}/${BINARY_NAME}"
+.PHONY: build
+
 cruft-update:
 ifeq (,$(wildcard .cruft.json))
 	@echo "Cruft not configured"
@@ -19,3 +35,7 @@ else
 	@cruft check || cruft update --skip-apply-ask --refresh-private-variables
 endif
 .PHONY: cruft-update
+
+dev:
+	@npx --yes concurrently "air" "npm --prefix ${WEB_APP_DIR} run dev"
+.PHONY: dev

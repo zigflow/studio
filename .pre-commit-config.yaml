@@ -40,6 +40,20 @@ repos:
     rev: v2.7.2
     hooks:
       - id: golangci-lint
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        entry: npm --prefix web/app run format
+        language: system
+        pass_filenames: false
+  - repo: local
+    hooks:
+      - id: lint
+        name: lint
+        entry: npm --prefix web/app run lint
+        language: system
+        pass_filenames: false
   - repo: https://github.com/mrsimonemms/toodaloo
     rev: v0.2.4
     hooks:

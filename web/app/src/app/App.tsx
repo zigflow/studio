@@ -1,5 +1,3 @@
-//go:build !prod
-
 /*
  * Copyright 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
  *
@@ -15,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { WorkflowBuilder } from '@workflowbuilder/sdk';
+import '@workflowbuilder/sdk/style.css';
 
-package app
-
-import (
-	"net/http"
-)
-
-func Mount(prefix string) (http.Handler, error) {
-	return nil, nil
+export default function App() {
+  return (
+    <WorkflowBuilder.Root
+      name="my-workflow"
+      layoutDirection="DOWN"
+    ></WorkflowBuilder.Root>
+  );
 }

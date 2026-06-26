@@ -1,4 +1,4 @@
-//go:build !prod
+//go:build prod
 
 /*
  * Copyright 2026 Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>
@@ -19,9 +19,20 @@
 package app
 
 import (
+	"embed"
+	"fmt"
+	"io/fs"
 	"net/http"
 )
 
+//go:embed dist/*
+var content embed.FS
+
 func Mount(prefix string) (http.Handler, error) {
-	return nil, nil
+	files, err := fs.Sub(content, "dist")
+	if err != nil {
+		return nil, fmt.Errorf("error getting file sub: %w", err)
+	}
+
+	return http.StripPrefix(prefix, http.FileServer(http.FS(files))), nil
 }

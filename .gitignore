@@ -12,3 +12,5 @@ go.work.sum
 .claude
 
 generated.go
+
+/studio

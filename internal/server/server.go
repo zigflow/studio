@@ -47,7 +47,7 @@ type Options struct {
 // New constructs the HTTP server: a Chi router with the OpenAPI-generated
 // handler mounted onto it. Routes are owned by the OpenAPI contract, so we
 // register the generated handler rather than declaring routes by hand.
-func New(opts Options) *http.Server {
+func New(opts Options) (*http.Server, error) {
 	strict := api.NewStrictHandler(&handlers{
 		appName: appName,
 		version: opts.Version,
@@ -63,12 +63,20 @@ func New(opts Options) *http.Server {
 	)))
 	r.Use(middleware.Recoverer)
 
-	r.Mount("/", app.Mount("/"))
+	// Mount the filepaths
 	r.Mount("/api", api.Handler(strict))
+
+	webapp, err := app.Mount("/")
+	if err != nil {
+		return nil, err
+	}
+	if webapp != nil {
+		r.Mount("/", webapp)
+	}
 
 	return &http.Server{
 		Addr:              opts.Address,
 		Handler:           r,
 		ReadHeaderTimeout: readHeaderTimeout,
-	}
+	}, nil
 }
