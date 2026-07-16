@@ -16,6 +16,7 @@ FROM node:lts AS dev
 ARG APP
 ARG GIT_COMMIT
 ARG VERSION
+COPY --from=ghcr.io/zigflow/zigflow /app/app /usr/local/bin/zigflow
 USER node
 WORKDIR /home/node/app
 ENV GIT_COMMIT="${GIT_COMMIT}"
@@ -24,17 +25,20 @@ COPY --chown=node:node . .
 ENV HOST=0.0.0.0
 ENV PORT=5173
 EXPOSE 5173
+RUN zigflow version
 CMD [ "npm", "run", "dev" ]
 
 FROM node:lts-alpine AS builder
 ARG VERSION
 ENV VERSION="${VERSION}"
+COPY --from=dev /usr/local/bin/zigflow /usr/local/bin/zigflow
 USER node
 WORKDIR /home/node/app
 COPY --chown=node:node . .
 RUN npm ci \
   && npm run build \
   && npm prune --omit=dev
+RUN zigflow version
 
 FROM cgr.dev/chainguard/node
 ARG GIT_COMMIT
@@ -48,10 +52,12 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV PUBLIC_WORKFLOWS_DIR=/data
 ENV NODE_ENV=production
+COPY --from=dev /usr/local/bin/zigflow /usr/local/bin/zigflow
 COPY --from=builder /home/node/app/build build
 COPY --from=builder /home/node/app/node_modules node_modules
 COPY --from=builder /home/node/app/package.json package.json
 USER 65532
 EXPOSE 3000
+RUN zigflow version
 VOLUME [ "/data" ]
 CMD [ "build" ]
