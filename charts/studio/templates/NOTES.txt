@@ -1,0 +1,5 @@
+Deployed
+========
+
+App: {{ include "studio.fullname" . }}
+Namespace: {{ .Release.Namespace }}
