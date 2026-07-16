@@ -168,18 +168,36 @@ task missing one. Call it:
 - **`scope.ts`** — `resolveScope(workflow, path)` walks a `ScopePath` from
   the root and returns the target `TaskList` plus a setter closure. Also
   `siblingNames()` (for Switch `then` dropdowns) and `findById()`.
+  A step's `field` is load-bearing specifically for `try`, which owns two
+  child lists (`try` and `catch.do`) that `taskId` alone cannot tell apart;
+  for `do`/`for`/`fork` there is a single child list, so `field` is
+  redundant but harmless.
 - **`treeToGraph.ts`** — pure projection: one scope's `TaskList` → SvelteFlow
   nodes + edges. Two layouts:
   - **`sequential`** (root, and `do`/`for`/`try` bodies): vertical stack,
-    array-order position, solid edges between consecutive nodes.
+    array-order position, solid edges between consecutive nodes. A `for`
+    body is entered with `field: 'do'`, the same as a plain `do` — a `for`
+    task carries both `for` (config) and `do` (body), and only the `do`
+    list is a drill-in scope. Task classification therefore checks `for`
+    before `do`, so a loop is not misread as a plain `do`.
   - **`parallel`** (`fork.branches`): horizontal lanes, no edges between
     them (they run concurrently, not in sequence).
   - Plus **derived, informational `goto` edges** for Switch cases whose
     `then` names a sibling task — dashed, never written back to the tree.
+    These are derived for Switch cases only. §1.1 notes any task's `then`
+    can be a goto; such a `then` is preserved verbatim in the tree (it
+    stays authoritative), but only Switch's is drawn as an edge — a
+    non-Switch goto has no visual.
 - **`mutations.ts`** — the only functions that change the tree:
   `renameTask`, `updateTaskBody`, `addTask`, `removeTask`, `moveTask`,
   `ensureTaskIds`, `syncWorkflowType`. All operate on a resolved
   `TaskList` reference from `resolveScope`.
+  These are pure array/object operations, so they re-render the canvas only
+  when applied to a *reactive* tree: the editor holds the loaded workflow as
+  reactive state (Svelte 5 `$state`) at the page/store level, not as a plain
+  loaded value. Reactivity is a property of *where* a mutation is applied
+  (the reactive proxy) — the functions themselves are unchanged and stay
+  plain, testable tree operations.
 - **`defaults.ts`** — a minimal, **schema-valid** starting body for each task
   kind, used when a node is added from the palette. Note: `try`/`catch` need
   a seeded placeholder step in both `try` and `catch.do` (unlike `do`/`for`,
@@ -217,6 +235,15 @@ inside `set`), and task-name-uniqueness-within-scope are additional Zigflow
 CLI (`zigflow validate`) checks not expressible as JSON Schema, and are out
 of scope for this editor's validation layer. The CLI remains the final
 authority before a workflow actually runs.
+
+One narrow exception is enforced at the *mutation* layer rather than here:
+`renameTask` and `addTask` (§3) reject a name that already exists in the
+exact `TaskList` being written to. It isn't schema-expressible, but the
+editor's own resolution logic (`resolveScope`/`findById`/`siblingNames`, §3)
+looks tasks up by name within a scope, so a duplicate name in one scope
+actively breaks that logic — unlike the sparse-but-valid states §7 leaves
+alone. The guard is deliberately narrow (exact name, exact list); all
+broader uniqueness and semantic checks still defer to `zigflow validate`.
 
 ---
 
@@ -297,12 +324,33 @@ customers who need it.
 - **Node component** (`TaskNode.svelte`) — a card per task: icon/kind
   glyph, name, one-line subtitle (method+endpoint for `call`, duration for
   `wait`, etc.), inline move-up/move-down/delete/drill-in controls.
-- **Inspector forms** — dedicated forms exist for `call`/http, `set`,
-  `wait`, `switch` (case list with `when`/`then`, `then` populated from
-  sibling names), and `for`. `fork`/`try` show a pointer to their sub-canvas
-  rather than an inline branch/step editor. `raise`/`listen`/`run`/other
-  `call` sub-types fall back to a JSON textarea for now — the pattern for
-  adding a dedicated form is established and should be extended over time.
+  **Clicking the card selects the task** (showing it in the inspector).
+  Drilling into a container's sub-canvas (`do`/`for`/`fork`/`try`) is a
+  separate, explicit control on the card, never the card click itself: a
+  single click cannot disambiguate select from drill, and `try` in
+  particular exposes *two* drill targets — its `try` body and its `catch`
+  handler — that need distinct buttons.
+- **Selection is UI-only state**, held in the editor layer and never part of
+  the workflow tree (per the UI/domain split in §"Editor architecture" of
+  `AGENTS.md`). It is cleared whenever the visible scope changes — drilling
+  into a container, or navigating via the breadcrumb — because a selection
+  pointing at a node that's no longer on screen is worse than no selection.
+- **Inspector forms** — dedicated forms exist for `call`/http, `set` (the
+  object / key-value form), `wait`, `switch` (case list with `when`/`then`),
+  and `for`. `fork`/`try` show a pointer to their sub-canvas rather than an
+  inline branch/step editor. A `set` given as a single expression string
+  (the less common form) falls back to the generic JSON editor rather than
+  getting its own form — proportionate to how rarely that form is used, not
+  a gap to close by default. `raise`/`listen`/`run`/other `call` sub-types
+  likewise fall back to a JSON textarea for now — the pattern for adding a
+  dedicated form is established and should be extended over time. Switch
+  `then` authoring is scoped to `continue`/`exit`/`end` plus same-scope
+  sibling task names (via `siblingNames()`). Loaded YAML may contain a
+  `then` naming a task in a *different* scope (a cross-scope goto); that
+  value is preserved on load and save but is not editable through the
+  dropdown — editing such a field would coerce it to an in-scope option.
+  A documented limitation, revisited only if cross-scope gotos prove common
+  in practice.
 - **Internationalisation (i18n).** All user-visible text in the UI must go
   through an i18n library — there are no hardcoded strings in components. For
   this PoC only two locales are supported: `en` (US English, and the fallback
@@ -316,6 +364,18 @@ customers who need it.
   routes) currently hold hardcoded English strings and must be retrofitted —
   tracked as follow-up work (§8), not done in the pass that introduced this
   rule.
+- **i18n library — Paraglide JS v2 (`@inlang/paraglide-js`).** Chosen over
+  `svelte-i18n` because its `preferredLanguage` strategy resolves the locale
+  from `Accept-Language` server-side (as required above) and is request-safe
+  via `AsyncLocalStorage`, whereas `svelte-i18n`'s module-global locale store
+  has a known SSR cross-request leak. Two costs come with this choice:
+  - Paraglide is a *compiler* with generated output (gitignored), so a compile
+    step must run before type-checking — already wired via an `i18n:compile`
+    script fronting `check`/`check:watch`.
+  - Message keys must be **flat and kind-suffixed** (`kind_*`, `subtitle_*`, …)
+    and selected with explicit `switch` statements, never dynamic lookup
+    (`m[key]()`), because dynamic lookup defeats Paraglide's tree-shaking. This
+    constrains how future inspector-form message keys should be organized.
 
 ---
 
@@ -360,6 +420,12 @@ several decisions above and should guide future ones:
   access is available, and how much of its own tooling (validation,
   serialization, Mermaid export) is worth reusing versus staying entirely
   on Zigflow's own schema for validation.
-- i18n library choice, and retrofitting the components already built (Canvas,
-  Inspector, TaskNode, page routes) to remove their hardcoded English strings
-  (§6).
+- Retrofitting the components already built (Canvas, Inspector, TaskNode, page
+  routes) to remove their hardcoded English strings (§6). The i18n library
+  choice itself is settled — Paraglide JS v2, see §6.
+- **Paraglide offline/air-gapped build.** Paraglide's compile step fetches its
+  message-format plugin from jsdelivr on first run in this environment. Before
+  CI or the Docker build can be trusted to run offline or in an air-gapped
+  runner, that plugin must be vendored, cached, or otherwise confirmed
+  available. Not a problem in the dev container (which has network); flagged
+  here so it doesn't surface as a surprise CI failure later.

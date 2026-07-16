@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [
+    // Compiles the i18n messages (DESIGN.md §6). `preferredLanguage` resolves the
+    // locale from the request's Accept-Language server-side; `baseLocale` (en) is
+    // the fallback. Keep these strategy values in sync with `npm run i18n:compile`.
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/lib/paraglide',
+      strategy: ['preferredLanguage', 'baseLocale'],
+    }),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
