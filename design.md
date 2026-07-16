@@ -1,6 +1,13 @@
-# Zigflow Editor — Design Doc
+# Zigflow Studio — Design Doc
 
-A drag-and-drop editor for [Zigflow](https://zigflow.dev) workflows.
+Zigflow Studio — a drag-and-drop editor for [Zigflow](https://zigflow.dev)
+workflows.
+
+> **Naming.** The product is called **Zigflow Studio**. Refer to it as
+> "Zigflow Studio" or "Studio" throughout the UI and docs — never "Zigflow
+> Editor" or "the editor". (Some prose below still says "the editor" as a
+> common noun; treat "Zigflow Studio"/"Studio" as the canonical name going
+> forward.)
 
 - **Stack:** SvelteKit (`adapter-node`), TypeScript,
   [SvelteFlow](https://svelteflow.dev) (`@xyflow/svelte`)
@@ -196,9 +203,15 @@ called from the save API route, and available to any client-side pre-check
 that wants it. There is deliberately no separate, hand-maintained set of
 "UI validation rules" to keep in sync with the schema.
 
-The bundled schema should be refreshed periodically from
-`https://zigflow.dev/schema.yaml` (a script for this, `update-schema`, is
-part of the PoC). Note this covers pure JSON-Schema-expressible rules only —
+The bundled schema is always sourced from the Zigflow CLI (`zigflow schema
+-o yaml`, via the `update-schema` script), never from the public website,
+and with no fallback. The CLI is the final authority on what a workflow must
+satisfy; bundling from any other source risks drift between "whatever the
+editor validates against" and "whatever the CLI/runtime actually enforces",
+which is precisely what this single-source rule exists to prevent. If the
+CLI is unavailable, `update-schema` fails loudly rather than refreshing from
+a second source — the devcontainer and GitHub Action install the CLI. Note
+this covers pure JSON-Schema-expressible rules only —
 jq expression syntax, determinism rules (`uuid`/`timestamp`/`now` only valid
 inside `set`), and task-name-uniqueness-within-scope are additional Zigflow
 CLI (`zigflow validate`) checks not expressible as JSON Schema, and are out
@@ -249,7 +262,20 @@ expected to be the primary strategy, possibly the only one, though the
 `WorkflowStore`-style seam should allow a future S3 (or similar)
 alternative.
 
-### 5.5 Explicitly out of scope
+### 5.5 Testing a workflow **(future)**
+
+Not built in the PoC. When a "Test" button exists, its production execution
+path dispatches each run to a **separate container** (e.g. a Kubernetes Job),
+never the app's own server process. Arbitrary, user-submitted workflow
+execution must stay isolated from the serving container.
+
+The `zigflow` CLI binary present in the production Docker image is a
+convenience for non-Kubernetes deployments and manual debugging — it is
+**not** the Test feature's actual execution path. Nobody reading the
+Dockerfile later should assume the serving container runs user workflows
+in-process.
+
+### 5.6 Explicitly out of scope
 
 No auth, no multi-user conflict detection, no locking. Last write wins.
 This is intentional — a platform team's own auth layer (e.g. Dex) sits in
@@ -277,6 +303,19 @@ customers who need it.
   rather than an inline branch/step editor. `raise`/`listen`/`run`/other
   `call` sub-types fall back to a JSON textarea for now — the pattern for
   adding a dedicated form is established and should be extended over time.
+- **Internationalisation (i18n).** All user-visible text in the UI must go
+  through an i18n library — there are no hardcoded strings in components. For
+  this PoC only two locales are supported: `en` (US English, and the fallback
+  for anything unmatched) and `en-GB`. Locale is determined **solely** from
+  the browser's `Accept-Language` header, resolved server-side per request —
+  there is no in-app language switcher and no locale persistence to build yet.
+  This is a binding constraint on every component-building step from here on
+  (inspector forms, canvas, node palette, …): new components must be authored
+  against the i18n library, not with inline English. **Follow-up:** the
+  components already built in earlier steps (Canvas, Inspector, TaskNode, page
+  routes) currently hold hardcoded English strings and must be retrofitted —
+  tracked as follow-up work (§8), not done in the pass that introduced this
+  rule.
 
 ---
 
@@ -321,3 +360,6 @@ several decisions above and should guide future ones:
   access is available, and how much of its own tooling (validation,
   serialization, Mermaid export) is worth reusing versus staying entirely
   on Zigflow's own schema for validation.
+- i18n library choice, and retrofitting the components already built (Canvas,
+  Inspector, TaskNode, page routes) to remove their hardcoded English strings
+  (§6).
