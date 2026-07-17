@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto, replaceState } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { page } from '$app/state';
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import Canvas from '$lib/components/Canvas.svelte';
   import Inspector from '$lib/components/Inspector.svelte';
@@ -21,7 +24,14 @@
     removeTask,
     updateTaskBody,
   } from '$lib/graph/mutations';
-  import { resolveScope, siblingNames } from '$lib/graph/scope';
+  import {
+    ScopeResolutionError,
+    resolveScope,
+    resolveSelectedName,
+    resolveUrlSegments,
+    scopePathToUrlSegments,
+    siblingNames,
+  } from '$lib/graph/scope';
   import { treeToGraph } from '$lib/graph/treeToGraph';
   import { m } from '$lib/paraglide/messages';
   import type { Task, TaskList } from '$lib/types/zigflow';
@@ -31,18 +41,14 @@
 
   let { data }: { data: PageData } = $props();
 
-  // Editing is in-memory this step (no Save API yet), so the loaded workflow is
-  // held as reactive `$state`: mutations happen on this proxy in place and the
-  // derived graph below re-projects automatically (AGENTS "Editor architecture").
+  // The loaded workflow is held as reactive `$state`: mutations happen on this
+  // proxy in place and the derived graph re-projects (AGENTS "Editor
+  // architecture"). Reset only when the workflow name changes.
   let workflow = $state(untrack(() => data.workflow));
-  let scopePath = $state<ScopePath>([]);
-  let selectedId = $state<string | null>(null);
   let renameError = $state<RenameOutcome | null>(null);
 
-  // Save state. `savedSnapshot` is the serialized workflow as last written to (or
-  // loaded from) disk; "dirty" is simply "current differs from that snapshot", so
-  // any edit shows unsaved and a successful save (or an undo back to the saved
-  // state) shows clean — no per-mutation bookkeeping needed.
+  // Save state — see DESIGN.md §6 ("Save & dirty state"). `savedSnapshot` is the
+  // serialized workflow as last written to disk; dirty = current differs.
   let savedSnapshot = $state(
     untrack(() => (data.workflow ? serializeWorkflow(data.workflow) : '')),
   );
@@ -55,20 +61,41 @@
     workflow ? serializeWorkflow(workflow) !== savedSnapshot : false,
   );
 
-  // Reset editor + save state when navigating to a different workflow (the page
-  // instance is reused across route params). `seenName` is a plain closure var.
+  // Reset workflow + save state when navigating to a *different* workflow (the
+  // page instance is reused across route params). `seenName` is a plain closure.
   let seenName: string | undefined;
   $effect(() => {
     if (seenName !== data.name) {
       seenName = data.name;
       workflow = data.workflow;
-      scopePath = [];
-      selectedId = null;
-      renameError = null;
       savedSnapshot = data.workflow ? serializeWorkflow(data.workflow) : '';
       clearSaveFeedback();
     }
   });
+
+  // Scope is a projection of the URL (DESIGN.md §6): the `[...scope]` segments
+  // are the source of truth. We re-resolve them against the *live* (reactive,
+  // possibly-edited) workflow so unsaved additions/renames inside the open path
+  // still resolve — the load's server-resolved value is only for first paint. A
+  // stale/typo link fails to resolve and falls back to root with a notice (§6).
+  const scopeResolution = $derived.by(() => {
+    if (!workflow) {
+      return { path: [] as ScopePath, error: false };
+    }
+    try {
+      return {
+        path: resolveUrlSegments(workflow, data.scopeSegments),
+        error: false,
+      };
+    } catch (err) {
+      if (err instanceof ScopeResolutionError) {
+        return { path: [] as ScopePath, error: data.scopeSegments.length > 0 };
+      }
+      throw err;
+    }
+  });
+  const scopePath = $derived(scopeResolution.path);
+  const scopeError = $derived(scopeResolution.error);
 
   /** Clear transient save banners (validation list + request-error message). */
   function clearSaveFeedback() {
@@ -77,8 +104,7 @@
     saveErrorStatus = undefined;
   }
 
-  // The scope currently on screen: its task list and layout. A stale path (e.g. a
-  // container removed while drilled elsewhere) falls back to root (DESIGN.md §3).
+  // The scope currently on screen: its task list and layout.
   const view = $derived.by(() => {
     if (!workflow) {
       return null;
@@ -98,17 +124,108 @@
 
   const graph = $derived(view ? treeToGraph(view.list, view.layout) : null);
 
+  // Selection (DESIGN.md §6) is UI state carried in the URL as
+  // `?selected=<taskName>`, name-based like scope segments. `selectedId` is the
+  // single reactive source of truth: the click handler sets it directly (which
+  // drives the node highlight), and each selection change mirrors it to the URL
+  // via `replaceState`. It is NOT `$derived` from `page.url`, because SvelteKit's
+  // shallow `replaceState` updates the address bar but not the reactive
+  // `page.url` — so a URL-derived value never moves on click, only after a real
+  // load re-reads the URL (the "highlight stuck until refresh" bug). Instead it's
+  // seeded from the URL for the first paint / deep links, and re-synced from the
+  // URL only on real navigation (see the effect below).
+  function resolveSelectedFromUrl(): string | null {
+    return view
+      ? resolveSelectedName(view.list, page.url.searchParams.get('selected'))
+      : null;
+  }
+
+  let selectedId = $state<string | null>(untrack(resolveSelectedFromUrl));
+
+  // Re-resolve selection from the URL only when a real navigation changes
+  // `page.url` (goto/refresh/back-forward). Clicks use shallow `replaceState`,
+  // which does not touch `page.url`, so this leaves the click-set value alone. A
+  // scope change navigates to a URL without `?selected`, so this also clears the
+  // selection whenever the visible scope changes.
+  let seenHref = untrack(() => page.url.href);
+  $effect(() => {
+    if (seenHref !== page.url.href) {
+      seenHref = page.url.href;
+      selectedId = resolveSelectedFromUrl();
+    }
+  });
+
+  // Drop a stale inspector rename error whenever the selected task changes.
+  let seenSelectedId: string | null | undefined;
+  $effect(() => {
+    if (seenSelectedId !== selectedId) {
+      seenSelectedId = selectedId;
+      renameError = null;
+    }
+  });
+
   const selectedNode = $derived(
     graph && selectedId
       ? (graph.nodes.find((node) => node.id === selectedId) ?? null)
       : null,
   );
 
-  // Sibling names visible to a Switch `then` jump in this scope, minus the switch
-  // itself (DESIGN.md §3).
   const scopeSiblings = $derived(
     view ? siblingNames(view.list, selectedId ?? undefined) : [],
   );
+
+  /**
+   * Navigate to a scope by pushing its URL — this is what makes scope shareable
+   * and back/forward-navigable. The `[...scope]` rest param carries the segments
+   * from {@link scopePathToUrlSegments}; an empty scope resolves to just the
+   * workflow root. `resolve` applies the base path. `replaceState` is used for
+   * the rename-driven URL rewrite (one edit, not a navigation).
+   */
+  function goToScope(path: ScopePath, options?: { replaceState?: boolean }) {
+    void goto(
+      resolve('/workflows/[name]/[...scope]', {
+        name: data.name,
+        scope: scopePathToUrlSegments(path).map(encodeURIComponent).join('/'),
+      }),
+      options,
+    );
+  }
+
+  /**
+   * Mirror the current selection into the URL as `?selected=<name>` (or remove it
+   * when null), keeping the shareable/refreshable URL in lockstep with
+   * `selectedId`. Uses `replaceState` — not `goto`/pushState — so clicking through
+   * nodes doesn't create a back-button entry per click. Preserves the current
+   * path + base via `page.url`.
+   */
+  function setSelectedParam(name: string | null) {
+    const url = new URL(page.url);
+    if (name === null) {
+      url.searchParams.delete('selected');
+    } else {
+      url.searchParams.set('selected', name);
+    }
+    // Query-only shallow update on the current, already-resolved URL (base path
+    // preserved via page.url); resolve() targets route paths, not query strings.
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    replaceState(url, page.state);
+  }
+
+  /**
+   * Select a node by id: set the single source `selectedId` (which drives the
+   * highlight) and mirror its name into the URL, in lockstep.
+   */
+  function selectById(id: string) {
+    const node = graph?.nodes.find((entry) => entry.id === id);
+    selectedId = node ? node.id : null;
+    setSelectedParam(node ? node.name : null);
+  }
+
+  /** Clear the selection (empty-canvas click, or Escape). */
+  function deselect() {
+    selectedId = null;
+    setSelectedParam(null);
+  }
 
   /** Resolve the live task list for the current scope, or null if unavailable. */
   function currentList(): TaskList | null {
@@ -124,8 +241,7 @@
 
   /**
    * Apply a list mutation, then re-run ensureTaskIds across the whole workflow so
-   * any newly-added container's seeded children get ids too (DESIGN.md §2.3),
-   * before the derived graph re-projects.
+   * any newly-added container's seeded children get ids too (DESIGN.md §2.3).
    */
   function mutate(fn: (list: TaskList) => void) {
     const list = currentList();
@@ -134,7 +250,6 @@
     }
     fn(list);
     ensureTaskIds(workflow);
-    // A fresh edit makes any prior save feedback stale.
     clearSaveFeedback();
   }
 
@@ -145,32 +260,50 @@
     }
     const added = addTask(list, kind);
     ensureTaskIds(workflow);
+    // Select the new node: set the source-of-truth id, mirror its name to the URL.
     selectedId = added.id;
-    renameError = null;
+    setSelectedParam(added.name);
     clearSaveFeedback();
   }
 
   function renameSelected(newName: string) {
     const list = currentList();
-    if (!list || !selectedId || !workflow) {
+    const id = selectedId;
+    if (!list || !id || !workflow) {
       return;
     }
-    const outcome = applyRename(list, selectedId, newName);
+    // Capture the scope path before mutating: if the renamed task is part of it,
+    // the name-based URL is now stale and must be rewritten.
+    const pathBefore = scopePath;
+    const outcome = applyRename(list, id, newName);
     if (outcome === 'ok') {
       ensureTaskIds(workflow);
       renameError = null;
       clearSaveFeedback();
+      if (pathBefore.some((step) => step.taskId === id)) {
+        // (Dormant with the current UI: the selected task is a child of the open
+        // scope, never an ancestor in the path — but keep this correct.) The
+        // renamed task is part of the open path, so rewrite the path segments.
+        const rewritten = pathBefore.map((step) =>
+          step.taskId === id ? { ...step, label: newName } : step,
+        );
+        // replaceState: the user experiences this as one edit, not a navigation,
+        // so it shouldn't add a back-button entry.
+        goToScope(rewritten, { replaceState: true });
+      } else {
+        // The selected task's name changed — keep `?selected` pointing at it, or
+        // selection would drop (it's resolved from the name).
+        setSelectedParam(newName);
+      }
     } else {
       renameError = outcome;
     }
   }
 
   /**
-   * Save the in-memory workflow through the single validation gate
-   * (PUT /api/workflows/[name], DESIGN.md §4). The server runs ensureTaskIds and
-   * syncWorkflowType and returns the canonical saved workflow, which we reflect
-   * back into state so client and disk cannot drift — the client does not
-   * duplicate that server-side normalisation.
+   * Save through the single validation gate (PUT /api/workflows/[name], §4). The
+   * server runs ensureTaskIds/syncWorkflowType and returns the canonical saved
+   * workflow, reflected back so client and disk don't drift.
    */
   async function save() {
     if (!workflow || saving || !dirty) {
@@ -196,11 +329,35 @@
     }
   }
 
+  /** Whether a keydown target is an editable field we shouldn't hijack. */
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    const tag = target.tagName;
+    return (
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      tag === 'SELECT' ||
+      target.isContentEditable
+    );
+  }
+
   function onKeydown(event: KeyboardEvent) {
     // Cmd/Ctrl+S — the universal Save shortcut — instead of the browser's own.
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
       void save();
+      return;
+    }
+    // Escape deselects — but not while the user is mid-edit in a form field, so
+    // Escape keeps its natural in-field behavior there.
+    if (
+      event.key === 'Escape' &&
+      selectedId &&
+      !isEditableTarget(event.target)
+    ) {
+      deselect();
     }
   }
 
@@ -232,34 +389,28 @@
   }
 
   const actions: CanvasActions = {
-    select: (id) => {
-      selectedId = id;
-      renameError = null;
-    },
-    deselect: () => {
-      selectedId = null;
-      renameError = null;
-    },
+    select: (id) => selectById(id),
+    deselect: () => deselect(),
     drill: (node: FlowNode, field) => {
-      scopePath = [...scopePath, { taskId: node.id, label: node.name, field }];
-      selectedId = null;
-      renameError = null;
+      // Navigate by URL so the drilled-into scope is shareable and survives
+      // refresh/back/forward. The new scope URL carries no `?selected`, so
+      // selection clears (it's derived from that param).
+      goToScope([...scopePath, { taskId: node.id, label: node.name, field }]);
     },
     moveUp: (id) => mutate((list) => void moveTask(list, id, 'up')),
     moveDown: (id) => mutate((list) => void moveTask(list, id, 'down')),
     remove: (id) => {
+      const wasSelected = selectedId === id;
       mutate((list) => removeTask(list, id));
-      if (selectedId === id) {
-        selectedId = null;
-        renameError = null;
+      // Drop the now-stale `?selected` if we removed the selected task.
+      if (wasSelected) {
+        deselect();
       }
     },
   };
 
   function navigate(index: number) {
-    scopePath = index < 0 ? [] : scopePath.slice(0, index + 1);
-    selectedId = null;
-    renameError = null;
+    goToScope(index < 0 ? [] : scopePath.slice(0, index + 1));
   }
 </script>
 
@@ -299,6 +450,9 @@
   {#if !workflow}
     <p class="error">{m.editor_load_error({ name: data.name })}</p>
   {:else}
+    {#if scopeError}
+      <div class="scope-banner" role="status">{m.scope_not_found()}</div>
+    {/if}
     {#if validationErrors.length > 0}
       <div class="save-banner invalid" role="alert">
         <p class="banner-heading">{m.save_invalid_heading()}</p>
@@ -421,6 +575,15 @@
   .save-button:disabled {
     opacity: 0.45;
     cursor: default;
+  }
+
+  .scope-banner {
+    margin: 0;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    background: #eff6ff;
+    color: #1e40af;
+    border-bottom: 1px solid #e2e8f0;
   }
 
   .save-banner {
