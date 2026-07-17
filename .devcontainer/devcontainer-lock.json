@@ -23,6 +23,11 @@
         "ghcr.io/devcontainers-extra/features/temporal-cli:1"
       ]
     },
+    "ghcr.io/postfinance/devcontainer-features/playwright-deps:1.0.0": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/postfinance/devcontainer-features/playwright-deps@sha256:1fbd235678d55637ddfb93c800249e48ae72af36cb382297ff3a22bab8945acb",
+      "integrity": "sha256:1fbd235678d55637ddfb93c800249e48ae72af36cb382297ff3a22bab8945acb"
+    },
     "ghcr.io/rio/features/skaffold:2": {
       "version": "2.0.0",
       "resolved": "ghcr.io/rio/features/skaffold@sha256:6368d4c207c98008165b8b9e8b0df19ebd9bc6efce7463da16aebcb18c8d7328",

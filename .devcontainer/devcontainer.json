@@ -4,6 +4,7 @@
   "features": {
     "ghcr.io/dhoeric/features/trivy:1": {},
     "ghcr.io/devcontainers-extra/features/go-task:1": {},
+    "ghcr.io/postfinance/devcontainer-features/playwright-deps:1.0.0": {},
     "ghcr.io/rio/features/skaffold:2": {},
     "ghcr.io/mrsimonemms/devcontainers/zigflow:1": {}
   },
@@ -11,6 +12,7 @@
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
+        "ms-playwright.playwright",
         "svelte.svelte-vscode"
       ],
       "settings": {}
@@ -20,6 +22,11 @@
     "HOST": "0.0.0.0"
   },
   "forwardPorts": [
-    5173
-  ]
+    5173,
+    9323
+  ],
+  "postStartCommand": {
+    "playwright-browsers": "npx playwright install",
+    "playwright-deps": "npx playwright install-deps"
+  }
 }
