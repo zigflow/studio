@@ -15,6 +15,7 @@
  */
 import type { Task, TaskList, ZigflowWorkflow } from '../types/zigflow';
 import type { ScopeField, ScopePath } from './model';
+import { taskKind } from './model';
 
 /**
  * Scope resolution (DESIGN.md §3).
@@ -204,4 +205,131 @@ export function findById(
     return undefined;
   };
   return walk(workflow.do);
+}
+
+// --- URL projection of a ScopePath (DESIGN.md §6) ----------------------------
+//
+// The URL carries scope as path segments so refresh/back/forward/share keep the
+// drilled-into TaskList. Each segment is a task *name* (unique within its scope
+// per the mutation-layer guard). `do`/`for`/`fork` need only the name — the
+// child list is implied by the task's kind. `try` owns two child lists, so its
+// name segment must be followed by a literal `try` or `catch` selector. Names,
+// not ids, are used for readability/shareability; the trade-off is that a rename
+// invalidates a previously shared deep link into that task (ids are stable
+// identity, but are deliberately kept out of the URL).
+
+/** The literal segments `try` reserves to select its two child lists. */
+const TRY_LITERALS: ReadonlySet<string> = new Set<ScopeField>(['try', 'catch']);
+
+/** Find a task by name directly within a list (not recursive). */
+function findNamedInList(list: TaskList, name: string): Task | undefined {
+  for (const named of list) {
+    for (const [key, task] of Object.entries(named)) {
+      if (key === name) {
+        return task;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Project a `ScopePath` to URL path segments: each step's task name, plus a
+ * `try`/`catch` literal after any `try` step. The inverse of
+ * {@link resolveUrlSegments}.
+ */
+export function scopePathToUrlSegments(scopePath: ScopePath): string[] {
+  const segments: string[] = [];
+  for (const step of scopePath) {
+    segments.push(step.label);
+    if (step.field === 'try' || step.field === 'catch') {
+      segments.push(step.field);
+    }
+  }
+  return segments;
+}
+
+/**
+ * Resolve URL scope segments against a workflow into a `ScopePath` (ids per the
+ * internal representation). Walks from the root, looking each name up in the
+ * current scope's list, implying the child list from the task's kind, and
+ * consuming a following `try`/`catch` literal when the task is a `try`.
+ *
+ * Throws {@link ScopeResolutionError} — which callers catch to fall back to root
+ * (DESIGN.md §6) — if a name doesn't resolve, a `try` isn't followed by a
+ * `try`/`catch` literal, or a `try`/`catch` literal appears where a task name is
+ * expected (i.e. not directly after a `try`).
+ */
+export function resolveUrlSegments(
+  workflow: ZigflowWorkflow,
+  segments: string[],
+): ScopePath {
+  const path: ScopePath = [];
+  let list: TaskList = workflow.do;
+
+  let i = 0;
+  while (i < segments.length) {
+    const name = segments[i];
+    if (TRY_LITERALS.has(name)) {
+      throw new ScopeResolutionError(
+        `Unexpected "${name}" URL segment — the try/catch selector is only valid immediately after a try task`,
+      );
+    }
+    i += 1;
+
+    const task = findNamedInList(list, name);
+    if (task === undefined) {
+      throw new ScopeResolutionError(`No task named "${name}" in this scope`);
+    }
+    const taskId = taskIdOf(task);
+    if (taskId === undefined) {
+      throw new ScopeResolutionError(
+        `Task "${name}" has no id to resolve against`,
+      );
+    }
+
+    const kind = taskKind(task);
+    let field: ScopeField;
+    if (kind === 'try') {
+      const literal = segments[i];
+      if (literal !== 'try' && literal !== 'catch') {
+        throw new ScopeResolutionError(
+          `Try task "${name}" must be followed by a "try" or "catch" URL segment`,
+        );
+      }
+      i += 1;
+      field = literal;
+    } else if (kind === 'do' || kind === 'for') {
+      field = 'do';
+    } else if (kind === 'fork') {
+      field = 'branches';
+    } else {
+      throw new ScopeResolutionError(
+        `Task "${name}" (${kind}) has no sub-canvas to open`,
+      );
+    }
+
+    path.push({ taskId, label: name, field });
+    list = childList(task, field, taskId);
+  }
+
+  return path;
+}
+
+/**
+ * Resolve a `?selected=` task name against a scope's list to its `__zigflow_id`,
+ * or `null` if the name is empty/missing or no task in the list carries it.
+ * Selection is name-based in the URL like scope segments (§6); a stale name is
+ * simply treated as "nothing selected" — a valid, low-stakes state, so unlike
+ * scope resolution this never throws.
+ */
+export function resolveSelectedName(
+  list: TaskList,
+  name: string | null | undefined,
+): string | null {
+  if (name === null || name === undefined || name === '') {
+    return null;
+  }
+  const task = findNamedInList(list, name);
+  return task ? (taskIdOf(task) ?? null) : null;
 }

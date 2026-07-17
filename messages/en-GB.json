@@ -83,5 +83,6 @@
   "save_invalid_location_task": "in {task}",
   "save_network_error": "Studio couldn't reach the server. Your changes are still here — try again.",
   "save_server_error": "The server rejected the save (HTTP {status}). Your changes are still here.",
-  "save_malformed_error": "Studio got an unexpected response from the server. Your changes are still here."
+  "save_malformed_error": "Studio got an unexpected response from the server. Your changes are still here.",
+  "scope_not_found": "Couldn't find that step in this workflow — showing the workflow root."
 }

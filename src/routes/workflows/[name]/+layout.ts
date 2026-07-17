@@ -15,15 +15,18 @@
  */
 import type { ZigflowWorkflow } from '$lib/types/zigflow';
 
-import type { PageLoad } from './$types';
+import type { LayoutLoad } from './$types';
 
 /**
- * Load one workflow through the existing GET /api/workflows/[name] route (which
- * runs `ensureTaskIds`, so every task arrives with a `__zigflow_id`). On failure
- * we return `workflow: null` and let the page render a localized message rather
- * than throwing to the generic error page.
+ * Load the workflow once per `[name]` (DESIGN.md §6). Scope lives in the child
+ * `[...scope]` route, so this load depends only on `name` — SvelteKit does not
+ * re-run it when just the scope segments change, which keeps drill-in/breadcrumb
+ * navigation from re-fetching (and clobbering unsaved edits held in the page's
+ * reactive state). Loads through the existing GET route (which runs
+ * `ensureTaskIds`). On failure, `workflow: null` renders a localized message
+ * rather than a hard 404.
  */
-export const load: PageLoad = async ({ params, fetch }) => {
+export const load: LayoutLoad = async ({ params, fetch }) => {
   const res = await fetch(`/api/workflows/${params.name}`);
   if (!res.ok) {
     return { name: params.name, workflow: null };

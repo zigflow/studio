@@ -314,7 +314,7 @@ customers who need it.
 ## 6. UI structure
 
 - **Project list** (`/`) — list existing workflows, create a new one.
-- **Editor** (`/workflows/[name]`) — three-pane layout:
+- **Editor** (`/workflows/[name]/[...scope]`) — three-pane layout:
   - Left: read-only workflow details (task queue, version, DSL) — matches
     Zigflow's own "Workflow Details" panel.
   - Center: the canvas — breadcrumb (scope path) + SvelteFlow view of the
@@ -323,6 +323,41 @@ customers who need it.
     metadata when nothing's selected). Workflow-global save/validation
     errors are *not* shown here — they render as a banner below the header
     (see **Save & dirty state** below).
+- **Scope lives in the URL** (`[...scope]`, one rest-param route — a zero-
+  segment match is the root, so it also covers `/workflows/[name]`). This is
+  what makes refresh, back/forward, and shared links open the drilled-into
+  scope instead of always the root. The scheme:
+  - Each segment is a task **name** (unique within its scope per the §4
+    mutation-layer guard). For `do`/`for`/`fork` the name alone suffices — the
+    child list is implied by the task's kind (`do`/`for` → `do`, `fork` →
+    `branches`). A `try` owns two child lists, so its name segment is followed
+    by a literal `try` or `catch` selector, e.g. a URL ending
+    `…/orderProcessing/fulfilOrder/try` (or `…/fulfilOrder/catch`).
+    (`try`/`catch` are therefore reserved: a task named exactly `try`/`catch`
+    can't be a scope segment — a fine trade for the readable grammar.)
+  - `scope.ts` provides the pure `scopePathToUrlSegments` / `resolveUrlSegments`
+    inverse pair. The route's `load` resolves the URL to a `ScopePath` for
+    first-paint (no root-then-jump flash); the page then re-resolves the same
+    segments against its *live* (possibly-edited) workflow, so drilling into a
+    just-added, unsaved container still works. Drill-in and breadcrumb navigate
+    via `goto()`; a rename of a task in the open path rewrites the URL with
+    `replaceState` (one edit, not a navigation).
+  - **Names, not ids, in the URL** — deliberately, for readable and shareable
+    links. The trade-off: a rename breaks any previously shared deep link into
+    that task (names aren't stable identity — `__zigflow_id` is, but ids are
+    kept out of the URL for readability). A stale or malformed link falls back
+    to the root scope with a brief notice rather than 404-ing the whole page.
+  - **Selection rides in a `?selected=<taskName>` query param** on the same
+    route (name-based, same rename-invalidates-old-links trade-off as scope
+    segments), resolved against the current scope's list. It's a query, not a
+    path segment — selection is "which item in the current scope is focused,"
+    not a different view — and not a hash fragment: a hash never reaches the
+    server, so it couldn't drive the SSR first paint and would reintroduce the
+    flash-of-no-selection the scope fix removed. Selecting/deselecting/renaming
+    update it via `replaceState`, not `goto`/pushState, so browser history
+    records scope changes only, not every click; changing scope drops it. A
+    stale or absent name is silently "nothing selected" (a valid state) — no
+    notice, unlike a bad scope segment.
 - **Node component** (`TaskNode.svelte`) — a card per task: icon/kind
   glyph, name, one-line subtitle (method+endpoint for `call`, duration for
   `wait`, etc.), inline move-up/move-down/delete/drill-in controls.
