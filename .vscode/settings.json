@@ -6,6 +6,10 @@
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": [
       ".github/workflows/*.{yml,yaml}"
+    ],
+    "https://zigflow.dev/schema.yaml": [
+      "workflows/*.yaml",
+      "workflows/*.json"
     ]
   },
   "prettier.prettierPath": "node_modules/prettier/index.cjs",

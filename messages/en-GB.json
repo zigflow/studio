@@ -74,5 +74,14 @@
   "form_switch_then": "Then",
   "form_switch_add": "Add case",
   "form_switch_remove": "Remove case",
-  "form_switch_empty": "No cases yet."
+  "form_switch_empty": "No cases yet.",
+  "save_button": "Save",
+  "save_status_dirty": "Unsaved changes",
+  "save_status_clean": "All changes saved",
+  "save_status_saving": "Saving…",
+  "save_invalid_heading": "Studio couldn't save this workflow — it isn't valid yet.",
+  "save_invalid_location_task": "in {task}",
+  "save_network_error": "Studio couldn't reach the server. Your changes are still here — try again.",
+  "save_server_error": "The server rejected the save (HTTP {status}). Your changes are still here.",
+  "save_malformed_error": "Studio got an unexpected response from the server. Your changes are still here."
 }

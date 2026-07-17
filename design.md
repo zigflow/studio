@@ -320,7 +320,9 @@ customers who need it.
   - Center: the canvas — breadcrumb (scope path) + SvelteFlow view of the
     current scope + "+ Add Node" control.
   - Right: inspector for the selected task (or workflow-level document
-    metadata when nothing's selected), plus validation errors.
+    metadata when nothing's selected). Workflow-global save/validation
+    errors are *not* shown here — they render as a banner below the header
+    (see **Save & dirty state** below).
 - **Node component** (`TaskNode.svelte`) — a card per task: icon/kind
   glyph, name, one-line subtitle (method+endpoint for `call`, duration for
   `wait`, etc.), inline move-up/move-down/delete/drill-in controls.
@@ -335,6 +337,34 @@ customers who need it.
   `AGENTS.md`). It is cleared whenever the visible scope changes — drilling
   into a container, or navigating via the breadcrumb — because a selection
   pointing at a node that's no longer on screen is worse than no selection.
+- **Save & dirty state.** Save PUTs the in-memory workflow to
+  `PUT /api/workflows/[name]`, the single validation gate (§4), triggered by
+  a Save button or **Cmd/Ctrl+S**. (On-disk save only; Publish/GitOps stays
+  future — §5.4.)
+  - **Dirty state is a snapshot comparison** — serialized current workflow
+    `!==` serialized last-saved workflow — not a flag toggled by each
+    mutation. This is more robust: an edit followed by an undo back to the
+    saved state correctly reads as clean, and no future mutation entry point
+    can forget to set a flag. A successful save adopts the server-returned
+    (id-filled, `workflowType`-synced) workflow as the new saved snapshot, so
+    client and disk don't drift.
+  - **Save/validation errors render as a full-width banner below the header,
+    not in the inspector pane.** They are workflow-global — a list of schema
+    error paths that may span several tasks — so the inspector, which is
+    about the one *selected* task, is the wrong home for them. Each error
+    shows its raw JSON-pointer path and message plus a derived "in {task}"
+    hint naming the enclosing task. A failed *request* (network/server) gets
+    its own distinct message, never conflated with "the workflow is invalid".
+  - **The "in {task}" hint is bounded by how Ajv reports against this
+    schema.** The task union uses `oneOf` + `unevaluatedProperties`, so an
+    invalid nested task typically surfaces as errors at the *enclosing
+    container* boundary (e.g. a bad `wait` reported on `/do/0/orderProcessing`
+    rather than `.../waitForPayment/wait`). The hint therefore names the
+    nearest task the path resolves to, which may be a container, not the
+    deepest offending field. That granularity is why the PoC shows a flat
+    list of paths + hints rather than click-to-navigate-to-the-exact-field —
+    the schema's own error reporting wouldn't reliably support the latter.
+    Revisit only if precise error localization becomes a priority.
 - **Inspector forms** — dedicated forms exist for `call`/http, `set` (the
   object / key-value form), `wait`, `switch` (case list with `when`/`then`),
   and `for`. `fork`/`try` show a pointer to their sub-canvas rather than an
