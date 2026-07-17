@@ -65,6 +65,63 @@ jobs:
       - name: Checking
         run: npm run check
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      # The Playwright dev server runs `npm run dev`, whose `predev` hook runs
+      # scripts/update-schema.mjs and needs the `zigflow` CLI on PATH with no
+      # fallback (DESIGN.md §4). Pull it from the same image the Dockerfile
+      # copies it from, and place it on PATH the way the helm job installs
+      # skaffold.
+      - name: Install zigflow CLI
+        run: |
+          docker create --name zigflow-cli ghcr.io/zigflow/zigflow
+          docker cp zigflow-cli:/app/app zigflow
+          docker rm zigflow-cli
+          chmod +x zigflow
+          sudo mv zigflow /usr/local/bin/zigflow
+          zigflow version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps
+
+      # On a cache hit the browser binaries are restored, but their OS-level
+      # dependencies are not cacheable, so they must still be installed.
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
   helm:
     runs-on: ubuntu-latest
     steps:

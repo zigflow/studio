@@ -1,0 +1,28 @@
+document:
+  dsl: 1.0.0
+  taskQueue: order-processing
+  workflowType: orderProcessing
+  version: 0.1.0
+do:
+  - orderProcessing:
+      metadata:
+        __zigflow_id: 732f5700-4ea1-47fe-9bb9-1b8e04c9ce65
+      do:
+        - validateOrder:
+            metadata:
+              __zigflow_id: 29c441f2-cd58-4537-9ebc-308ec9c88bb7
+            set:
+              validated: true
+        - waitForPayment:
+            metadata:
+              __zigflow_id: 7a70ab65-aa64-412a-a4ae-e2daccb2f153
+            wait:
+              seconds: 30
+        - fulfilOrder:
+            metadata:
+              __zigflow_id: 27615fd7-0de5-4116-a48a-b3469c235bcc
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://example.com/orders/fulfil
