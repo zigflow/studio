@@ -10,13 +10,15 @@
     SvelteFlow,
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
-  import { setContext, untrack } from 'svelte';
+  import { setContext } from 'svelte';
 
+  import { containerField } from '../editor/drilldown';
   import TaskNode from './TaskNode.svelte';
   import {
     type CanvasActions,
+    type CanvasSelection,
     type TaskFlowNode,
-    canvasActionsKey,
+    canvasSelectionKey,
     toFlowEdges,
     toFlowNodes,
   } from './canvas';
@@ -29,27 +31,46 @@
 
   let { graph, selectedId, actions }: Props = $props();
 
-  // Node-card buttons dispatch edit intents through this context (see canvas.ts).
-  // The page provides a single stable `actions` object, so snapshotting it once is
-  // correct.
-  setContext<CanvasActions>(
-    canvasActionsKey,
-    untrack(() => actions),
-  );
+  // Expose selection to the custom node via context so the highlight is a CSS
+  // class toggle, not a `nodes` rebuild (see CanvasSelection in canvas.ts). The
+  // getter keeps it reactive: TaskNode re-derives its `selected` when this moves.
+  setContext<CanvasSelection>(canvasSelectionKey, {
+    get id() {
+      return selectedId;
+    },
+  });
 
   const nodeTypes: NodeTypes = { task: TaskNode };
+
+  // Node clicks come through SvelteFlow's own event pipeline (a native DOM
+  // handler on the card can't be used: SvelteFlow/d3-zoom stops `dblclick`
+  // propagation before it reaches Svelte's delegated root, and the first click's
+  // selection re-render replaces the card element mid-gesture). `event.detail` is
+  // the click count, so a double-click (detail 2) drills into a container — an
+  // accelerator for the inspector's Open button (DESIGN.md §6) — while a single
+  // click selects. For `try`, `containerField` returns `'try'`, so double-click
+  // opens the `try` body by default (catch stays an explicit inspector button);
+  // non-container kinds have no field, so double-click just re-selects.
+  function onNodeClick(event: MouseEvent | TouchEvent, node: TaskFlowNode) {
+    const flow = node.data.flow;
+    if (event.detail >= 2) {
+      const field = containerField(flow.kind);
+      if (field) {
+        actions.drill(flow, field);
+        return;
+      }
+    }
+    actions.select(flow.id);
+  }
 
   let nodes = $state.raw<TaskFlowNode[]>([]);
   let edges = $state.raw<Edge[]>([]);
 
-  // Re-project whenever the scope's graph or the selection changes. The pure
-  // mappers in ./canvas build SvelteFlow's node/edge shape; treeToGraph stays the
-  // source of truth.
+  // Re-project only when the scope's graph changes — NOT on selection (that
+  // rides the context above). The pure mappers in ./canvas build SvelteFlow's
+  // node/edge shape; treeToGraph stays the source of truth.
   $effect(() => {
-    nodes = toFlowNodes(graph).map((node) => ({
-      ...node,
-      selected: node.id === selectedId,
-    }));
+    nodes = toFlowNodes(graph);
     edges = toFlowEdges(graph);
   });
 </script>
@@ -66,7 +87,7 @@
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
-      onnodeclick={({ node }) => actions.select(node.data.flow.id)}
+      onnodeclick={({ event, node }) => onNodeClick(event, node)}
       onpaneclick={() => actions.deselect()}
     >
       <Background />

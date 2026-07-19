@@ -51,7 +51,7 @@
   "inspector_kind_label": "Type",
   "inspector_rename_error_duplicate": "That name is already used in this scope.",
   "inspector_rename_error_empty": "A task needs a name.",
-  "inspector_subcanvas_hint": "Edit this task's steps in its sub-canvas — open it from the node.",
+  "inspector_subcanvas_hint": "Edit this task's steps in its sub-canvas — open it from the controls above.",
   "inspector_fallback_hint": "No dedicated form for this task type yet; showing the raw definition.",
   "form_http_method": "Method",
   "form_http_endpoint": "Endpoint URL",

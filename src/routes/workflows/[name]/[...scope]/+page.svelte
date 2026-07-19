@@ -15,7 +15,12 @@
     toSaveErrorDisplays,
   } from '$lib/editor/save';
   import type { SaveErrorDisplay } from '$lib/editor/save';
-  import type { FlowNode, ScopePath, TaskKind } from '$lib/graph/model';
+  import type {
+    FlowNode,
+    ScopeField,
+    ScopePath,
+    TaskKind,
+  } from '$lib/graph/model';
   import { layoutForScope } from '$lib/graph/model';
   import {
     addTask,
@@ -179,6 +184,18 @@
 
   const scopeSiblings = $derived(
     view ? siblingNames(view.list, selectedId ?? undefined) : [],
+  );
+
+  // Boundary flags for the inspector's move controls, computed the same way the
+  // canvas derives them for a node (canvas.ts `toFlowNodes`): first/last in the
+  // current scope's list disable move-up/move-down respectively.
+  const selectedFirst = $derived(
+    selectedNode != null && selectedNode.index === 0,
+  );
+  const selectedLast = $derived(
+    graph != null &&
+      selectedNode != null &&
+      selectedNode.index === graph.nodes.length - 1,
   );
 
   /**
@@ -419,6 +436,33 @@
   function navigate(index: number) {
     goToScope(index < 0 ? [] : scopePath.slice(0, index + 1));
   }
+
+  // Inspector toolbar handlers: reuse the exact same `actions` the canvas used,
+  // keyed by the selected id, so move/delete behaviour (including
+  // remove-clears-selection) is identical to the old on-card controls.
+  function moveSelectedUp() {
+    if (selectedId) {
+      actions.moveUp(selectedId);
+    }
+  }
+
+  function moveSelectedDown() {
+    if (selectedId) {
+      actions.moveDown(selectedId);
+    }
+  }
+
+  function deleteSelected() {
+    if (selectedId) {
+      actions.remove(selectedId);
+    }
+  }
+
+  function drillSelected(field: ScopeField) {
+    if (selectedNode) {
+      actions.drill(selectedNode, field);
+    }
+  }
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -522,8 +566,14 @@
               kind={selectedNode.kind}
               siblingNames={scopeSiblings}
               {renameError}
+              first={selectedFirst}
+              last={selectedLast}
               onrename={renameSelected}
               onpatch={patchSelected}
+              onmoveup={moveSelectedUp}
+              onmovedown={moveSelectedDown}
+              ondelete={deleteSelected}
+              ondrill={drillSelected}
             />
           {/key}
         {:else}

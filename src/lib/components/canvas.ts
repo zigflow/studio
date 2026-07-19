@@ -46,11 +46,12 @@ export interface TaskNodeData {
 export type TaskFlowNode = Node<TaskNodeData, 'task'>;
 
 /**
- * Node-level edit intents, provided by the canvas via Svelte context so a custom
- * node's inline controls can dispatch them without the pure {@link toFlowNodes}
- * mapping needing to close over page state. The canvas turns whole-node clicks
- * into `select`/pane clicks into `deselect`; the buttons on the card call the
- * rest. Editing itself happens in the page's mutation handlers (DESIGN.md §3).
+ * Node-level edit intents. The canvas turns a single node click into `select`,
+ * a double click into `drill` (an accelerator for the inspector's Open button,
+ * DESIGN.md §6), and pane clicks into `deselect`. The inspector dispatches the
+ * rest (move, delete, drill-in) for the selected task. Editing itself happens in
+ * the page's mutation handlers (DESIGN.md §3), so this mapping stays pure and
+ * never closes over page state.
  */
 export interface CanvasActions {
   select(id: string): void;
@@ -61,8 +62,23 @@ export interface CanvasActions {
   remove(id: string): void;
 }
 
-/** Svelte context key for {@link CanvasActions}. */
-export const canvasActionsKey = Symbol('zigflow.canvasActions');
+/**
+ * The currently-selected node id, exposed to custom nodes via Svelte context.
+ *
+ * Selection drives only a CSS highlight, so it is deliberately kept *out* of the
+ * SvelteFlow `nodes` array: re-projecting nodes on every selection change
+ * recreated the card DOM mid-gesture, which broke the double-click-to-drill
+ * accelerator (the second click landed on a fresh element). Reading the id
+ * through a reactive getter toggles the `.selected` class in place instead, so
+ * the node element is stable across selection. `nodes` now changes only when the
+ * scope's graph does.
+ */
+export interface CanvasSelection {
+  readonly id: string | null;
+}
+
+/** Svelte context key for {@link CanvasSelection}. */
+export const canvasSelectionKey = Symbol('zigflow.canvasSelection');
 
 const NODE_STRIDE_Y = 132;
 const NODE_STRIDE_X = 260;

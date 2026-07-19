@@ -340,7 +340,12 @@ customers who need it.
   - Left: read-only workflow details (task queue, version, DSL) — matches
     Zigflow's own "Workflow Details" panel.
   - Center: the canvas — breadcrumb (scope path) + SvelteFlow view of the
-    current scope + "+ Add Node" control.
+    current scope + "+ Add Node" control. The breadcrumb's root segment is a
+    generic, translated "Workflow" label (not the project name — that already
+    sits in the header, and the root scope's label is a distinct identifier
+    from the project name); every later segment is the actual scope-path task
+    name and is clickable to navigate back to that level (the second-to-last
+    segment is always the immediate parent scope).
   - Right: inspector for the selected task (or workflow-level document
     metadata when nothing's selected). Workflow-global save/validation
     errors are *not* shown here — they render as a banner below the header
@@ -382,13 +387,32 @@ customers who need it.
     notice, unlike a bad scope segment.
 - **Node component** (`TaskNode.svelte`) — a card per task: icon/kind
   glyph, name, one-line subtitle (method+endpoint for `call`, duration for
-  `wait`, etc.), inline move-up/move-down/delete/drill-in controls.
-  **Clicking the card selects the task** (showing it in the inspector).
-  Drilling into a container's sub-canvas (`do`/`for`/`fork`/`try`) is a
-  separate, explicit control on the card, never the card click itself: a
-  single click cannot disambiguate select from drill, and `try` in
-  particular exposes *two* drill targets — its `try` body and its `catch`
-  handler — that need distinct buttons.
+  `wait`, etc.). The card is **informational**: **single-clicking it selects
+  the task** (showing it in the inspector). All per-task actions —
+  move-up/move-down/delete, and drill-in for containers — live in the
+  inspector (see below), shown only for the selected task, so the canvas stays
+  clutter-free. Drilling into a container's sub-canvas (`do`/`for`/`fork`/`try`)
+  is an explicit inspector button, never the *single* card click: a single
+  click cannot disambiguate select from drill, and `try` in particular exposes
+  *two* drill targets — its `try` body and its `catch` handler — that need
+  distinct buttons.
+  - **Double-click as a drill accelerator.** Container nodes
+    (`do`/`for`/`fork`/`try`) also support **double-click** as a shortcut for
+    the inspector's Open action — it opens the same sub-canvas the Open
+    button does. The explicit inspector button(s) remain the
+    discoverable/accessible primary path; double-click is a mouse-only
+    accelerator layered on top. For `try`, double-click deliberately opens the
+    **`try` body** (not `catch`) — `catch` stays reachable only via its own
+    inspector button. Non-container kinds have nothing to drill into, so
+    double-click just re-selects them. It is detected in the canvas via
+    SvelteFlow's own node-click event (`event.detail === 2`), *not* a DOM
+    handler on the card: SvelteFlow/d3-zoom stop `dblclick` propagation before
+    it reaches Svelte's delegated listener root, and selecting on the first
+    click must not rebuild the node (which recreated the card mid-gesture and
+    swallowed the second click) — so selection rides a context-driven CSS class
+    instead of the `nodes` array. A node double-click does not zoom the pane
+    (SvelteFlow only zooms on background double-clicks); the empty-pane
+    double-click-to-zoom is unchanged.
 - **Selection is UI-only state**, held in the editor layer and never part of
   the workflow tree (per the UI/domain split in §"Editor architecture" of
   `AGENTS.md`). It is cleared whenever the visible scope changes — drilling
