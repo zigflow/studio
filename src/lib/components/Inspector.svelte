@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { RenameOutcome } from '$lib/editor/commands';
-  import type { TaskKind } from '$lib/graph/model';
+  import { containerField, isContainerKind } from '$lib/editor/drilldown';
+  import type { ScopeField, TaskKind } from '$lib/graph/model';
   import { m } from '$lib/paraglide/messages';
   import type { Task } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
@@ -18,8 +19,17 @@
     kind: TaskKind;
     siblingNames: string[];
     renameError: RenameOutcome | null;
+    /** Selected task is first in its scope — disables "move up". */
+    first: boolean;
+    /** Selected task is last in its scope — disables "move down". */
+    last: boolean;
     onrename: (newName: string) => void;
     onpatch: (task: Task) => void;
+    onmoveup: () => void;
+    onmovedown: () => void;
+    ondelete: () => void;
+    /** Drill into one of the selected container's child lists (DESIGN.md §3). */
+    ondrill: (field: ScopeField) => void;
   };
 
   let {
@@ -28,8 +38,14 @@
     kind,
     siblingNames,
     renameError,
+    first,
+    last,
     onrename,
     onpatch,
+    onmoveup,
+    onmovedown,
+    ondelete,
+    ondrill,
   }: Props = $props();
 
   // Local edit buffer for the name; committed on blur/Enter so we don't rename on
@@ -40,6 +56,37 @@
 
 <div class="inspector">
   <h2>{m.inspector_heading()}</h2>
+
+  <!-- Whole-task controls (DESIGN.md §6): these act on the selected task, not on
+       any single field, so they sit in a toolbar above the per-field forms. -->
+  <div class="task-actions">
+    <button type="button" disabled={first} onclick={onmoveup}
+      >{m.node_move_up()}</button
+    >
+    <button type="button" disabled={last} onclick={onmovedown}
+      >{m.node_move_down()}</button
+    >
+    {#if kind === 'try'}
+      <!-- Try owns two child lists; each gets its own drill affordance so the
+           choice between `try` and `catch.do` is explicit (DESIGN.md §3). -->
+      <button type="button" class="drill" onclick={() => ondrill('try')}
+        >{m.node_open_try()}</button
+      >
+      <button type="button" class="drill" onclick={() => ondrill('catch')}
+        >{m.node_open_catch()}</button
+      >
+    {:else if isContainerKind(kind)}
+      {@const field = containerField(kind)}
+      {#if field}
+        <button type="button" class="drill" onclick={() => ondrill(field)}
+          >{m.node_open()}</button
+        >
+      {/if}
+    {/if}
+    <button type="button" class="delete" onclick={ondelete}
+      >{m.node_delete()}</button
+    >
+  </div>
 
   <label>
     <span>{m.inspector_name_label()}</span>
@@ -95,6 +142,37 @@
     margin: 0;
     font-size: 0.8rem;
     color: #475569;
+  }
+
+  .task-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .task-actions button {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.25rem;
+    background: #f8fafc;
+    color: #334155;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .task-actions button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .task-actions button.delete {
+    color: #b91c1c;
+  }
+
+  .task-actions button.drill {
+    border-color: #6366f1;
+    color: #4338ca;
   }
 
   .error {

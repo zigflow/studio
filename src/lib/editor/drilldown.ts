@@ -23,6 +23,14 @@ import type { ScopeField, TaskKind } from '../graph/model';
  * `try` maps to its `try` body only. Its `catch.do` is a second child list that
  * needs its own drill-in affordance (a toggle or a second crumb) — deferred until
  * editing lands, since this read-only step has nowhere to surface the choice.
+ *
+ * This is the single source of truth for "which kinds are openable" (see
+ * {@link isContainerKind}) and "which field they open" — the inspector's Open
+ * button(s) and the canvas double-click both drill through it. The switch is
+ * **exhaustive over every {@link TaskKind}** on purpose: a kind added to
+ * `TASK_KINDS` fails to compile here (the `never` guard) until it is classified
+ * as a container with its field or as explicitly non-nesting, so a new kind
+ * cannot silently miss drill-in/Open/double-click support.
  */
 export function containerField(kind: TaskKind): ScopeField | null {
   switch (kind) {
@@ -33,8 +41,18 @@ export function containerField(kind: TaskKind): ScopeField | null {
       return 'branches';
     case 'try':
       return 'try';
-    default:
+    case 'call':
+    case 'listen':
+    case 'raise':
+    case 'run':
+    case 'set':
+    case 'switch':
+    case 'wait':
       return null;
+    default: {
+      const unreachable: never = kind;
+      throw new Error(`Unhandled task kind: ${String(unreachable)}`);
+    }
   }
 }
 

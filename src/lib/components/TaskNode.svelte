@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { containerField } from '$lib/editor/drilldown';
   import { taskSubtitle } from '$lib/editor/subtitle';
   import type { SubtitleDescriptor } from '$lib/editor/subtitle';
   import { m } from '$lib/paraglide/messages';
@@ -7,20 +6,22 @@
   import { getContext } from 'svelte';
 
   import {
-    type CanvasActions,
+    type CanvasSelection,
     type TaskNodeData,
-    canvasActionsKey,
+    canvasSelectionKey,
   } from './canvas';
   import { kindLabel } from './labels';
 
   // SvelteFlow types node `data` as `any` at this boundary; narrow it once here.
-  // `selected` is a built-in NodeProps field the canvas sets per selection state.
-  let { data, selected = false }: { data: TaskNodeData; selected?: boolean } =
-    $props();
+  let { data }: { data: TaskNodeData } = $props();
 
-  const actions = getContext<CanvasActions>(canvasActionsKey);
+  // Selection highlight comes from the canvas context, not SvelteFlow's own
+  // `selected` node prop — see CanvasSelection in canvas.ts for why (keeping it
+  // off the `nodes` array is what makes double-click-to-drill work).
+  const selection = getContext<CanvasSelection>(canvasSelectionKey);
 
   const flow = $derived(data.flow);
+  const selected = $derived(flow.id === selection.id);
 
   function subtitleText(desc: SubtitleDescriptor): string {
     switch (desc.key) {
@@ -57,75 +58,20 @@
   }
 
   const subtitle = $derived(subtitleText(taskSubtitle(flow.task)));
-
-  // Buttons stop propagation so their action doesn't also trigger node-select.
-  function act(fn: () => void) {
-    return (event: MouseEvent) => {
-      event.stopPropagation();
-      fn();
-    };
-  }
 </script>
 
 <Handle type="target" position={Position.Top} isConnectable={false} />
 
+<!-- The card is purely informational (DESIGN.md §6): single-click selects the
+     task and double-click drills into a container (both handled at the canvas
+     level via SvelteFlow's node-click event, see Canvas.svelte). It renders
+     kind, name, and subtitle only. -->
 <div class="task-node" class:selected>
   <div class="kind">{kindLabel(flow.kind)}</div>
   <div class="name">{flow.name}</div>
   {#if subtitle}
     <div class="subtitle">{subtitle}</div>
   {/if}
-
-  <div class="controls">
-    <button
-      type="button"
-      title={m.node_move_up()}
-      aria-label={m.node_move_up()}
-      disabled={data.first}
-      onclick={act(() => actions.moveUp(flow.id))}>↑</button
-    >
-    <button
-      type="button"
-      title={m.node_move_down()}
-      aria-label={m.node_move_down()}
-      disabled={data.last}
-      onclick={act(() => actions.moveDown(flow.id))}>↓</button
-    >
-    <button
-      type="button"
-      class="delete"
-      title={m.node_delete()}
-      aria-label={m.node_delete()}
-      onclick={act(() => actions.remove(flow.id))}>✕</button
-    >
-
-    {#if flow.kind === 'try'}
-      <!-- Try owns two child lists; give each its own drill affordance so the
-           choice between `try` and `catch.do` is explicit (DESIGN.md §3). -->
-      <button
-        type="button"
-        class="drill"
-        onclick={act(() => actions.drill(flow, 'try'))}
-        >{m.node_open_try()}</button
-      >
-      <button
-        type="button"
-        class="drill"
-        onclick={act(() => actions.drill(flow, 'catch'))}
-        >{m.node_open_catch()}</button
-      >
-    {:else if data.container}
-      {@const field = containerField(flow.kind)}
-      {#if field}
-        <button
-          type="button"
-          class="drill"
-          onclick={act(() => actions.drill(flow, field))}
-          >{m.node_open()}</button
-        >
-      {/if}
-    {/if}
-  </div>
 </div>
 
 <Handle type="source" position={Position.Bottom} isConnectable={false} />
@@ -168,37 +114,5 @@
     font-size: 0.78rem;
     color: #475569;
     overflow-wrap: anywhere;
-  }
-
-  .controls {
-    margin-top: 0.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .controls button {
-    padding: 0.1rem 0.4rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.25rem;
-    background: #f8fafc;
-    color: #334155;
-    font: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-
-  .controls button:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  .controls button.delete {
-    color: #b91c1c;
-  }
-
-  .controls button.drill {
-    border-color: #6366f1;
-    color: #4338ca;
   }
 </style>
