@@ -313,7 +313,29 @@ customers who need it.
 
 ## 6. UI structure
 
-- **Project list** (`/`) — list existing workflows, create a new one.
+- **Project list** (`/workflows`) — list existing workflows, create a new one.
+`/` redirects here.
+- **Display naming — one rule, to stop the project-name mixup.** What a human
+  is shown as a "name" is *never* the on-disk project/directory name; that is a
+  storage/routing identifier, not a display name.
+  - A **workflow project's** display name is `document.title` if present,
+    otherwise `document.workflowType` (both live on `ZigflowDocumentMeta`).
+    Never the on-disk directory name. That directory name does still govern
+    URLs (`/workflows/[name]/...`), so it may still need to appear *somewhere*
+    (e.g. a subtitle or secondary detail), just never as the primary displayed
+    name. `GET /api/workflows` returns this resolved as `{ name, displayName }`
+    per workflow (routing name + display name); the project list renders
+    `displayName` as the link text and shows `name` as a muted caption only when
+    the two differ. The **editor header** (and the browser tab `<title>`)
+    follows the same rule — it shows the resolved display name, not `data.name`;
+    the routing/directory name is surfaced as a "Directory" row in the
+    read-only details sidebar (its acceptable secondary-detail home).
+  - An **individual task** in any `do` list — including a top-level workflow,
+    which is itself just a task under the root `do` (§1.2) — is always referred
+    to by its own name: the string key of its `{ [name]: Task }` entry (§2.1),
+    never any other property. This is already how the breadcrumb and canvas
+    label tasks; it is stated here as the general rule so future work doesn't
+    reintroduce the project-name mixup.
 - **Editor** (`/workflows/[name]/[...scope]`) — three-pane layout:
   - Left: read-only workflow details (task queue, version, DSL) — matches
     Zigflow's own "Workflow Details" panel.
@@ -461,36 +483,4 @@ several decisions above and should guide future ones:
   and any task's own `then`). Avoid parallel, hand-maintained copies of a
   rule that need to be kept in sync by discipline rather than by
   construction.
-- **Prefer decisions that are cheap now and don't foreclose the expensive
-  version later**, over deferring the decision entirely. Library choices
-  (`yaml` over `js-yaml`), interfaces (`WorkflowStore`), and file-naming
-  conventions (history file shape) are examples: picking the shape now costs
-  little, and avoids a rewrite later when the deferred feature actually gets
-  built.
-
----
-
-## 8. Open items / things to revisit
-
-- Full inspector forms for `fork`, `try`, `raise`, `listen`, `run`, and the
-  `grpc`/`activity` `call` sub-types.
-- Lossless YAML round-tripping (comments, key order) — decide if/when
-  needed; library choice already supports it (§5.2).
-- History retention/pruning policy — not needed until history (§5.3) is
-  built.
-- Publish strategy implementation, commit-message dialog, and Git config
-  file schema (§5.4).
-- Whether `@open-workflow-specification/sdk-typescript` should replace the
-  hand-written types in `src/lib/types/zigflow.ts` once package registry
-  access is available, and how much of its own tooling (validation,
-  serialization, Mermaid export) is worth reusing versus staying entirely
-  on Zigflow's own schema for validation.
-- Retrofitting the components already built (Canvas, Inspector, TaskNode, page
-  routes) to remove their hardcoded English strings (§6). The i18n library
-  choice itself is settled — Paraglide JS v2, see §6.
-- **Paraglide offline/air-gapped build.** Paraglide's compile step fetches its
-  message-format plugin from jsdelivr on first run in this environment. Before
-  CI or the Docker build can be trusted to run offline or in an air-gapped
-  runner, that plugin must be vendored, cached, or otherwise confirmed
-  available. Not a problem in the dev container (which has network); flagged
-  here so it doesn't surface as a surprise CI failure later.
+- **Prefer decisions that are cheap now and don't f
