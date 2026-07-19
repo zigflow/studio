@@ -1,9 +1,13 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "app_name": "Zigflow Studio",
+  "workflows_heading": "Workflows",
+  "workflows_empty": "No workflows yet.",
+  "workflows_directory_caption": "Directory: {name}",
   "editor_loading": "Loading workflow…",
   "editor_load_error": "Studio couldn't load the workflow \"{name}\".",
   "details_heading": "Workflow details",
+  "details_directory": "Directory",
   "details_task_queue": "Task queue",
   "details_version": "Version",
   "details_dsl": "DSL",

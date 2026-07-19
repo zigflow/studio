@@ -47,6 +47,13 @@
   let workflow = $state(untrack(() => data.workflow));
   let renameError = $state<RenameOutcome | null>(null);
 
+  // Display name follows the §6 rule: document.title || document.workflowType,
+  // never the routing/directory name (`data.name`). Null until the workflow
+  // loads; the routing name is surfaced separately in the details sidebar.
+  const workflowDisplayName = $derived(
+    workflow ? workflow.document.title || workflow.document.workflowType : null,
+  );
+
   // Save state — see DESIGN.md §6 ("Save & dirty state"). `savedSnapshot` is the
   // serialized workflow as last written to disk; dirty = current differs.
   let savedSnapshot = $state(
@@ -416,11 +423,15 @@
 
 <svelte:window onkeydown={onKeydown} />
 
+<svelte:head>
+  <title>{workflowDisplayName ?? m.app_name()}</title>
+</svelte:head>
+
 <div class="editor">
   <header>
     <span class="product">{m.app_name()}</span>
     {#if workflow}
-      <span class="workflow-name">{data.name}</span>
+      <span class="workflow-name">{workflowDisplayName}</span>
       <span class="spacer"></span>
       <span
         class="save-status"
@@ -481,6 +492,8 @@
       <aside class="details">
         <h2>{m.details_heading()}</h2>
         <dl>
+          <dt>{m.details_directory()}</dt>
+          <dd>{data.name}</dd>
           <dt>{m.details_task_queue()}</dt>
           <dd>{workflow.document.taskQueue}</dd>
           <dt>{m.details_version()}</dt>

@@ -22,9 +22,28 @@ import { json } from '@sveltejs/kit';
 
 import type { RequestHandler } from './$types';
 
-/** GET /api/workflows — list stored workflow names. */
+/**
+ * GET /api/workflows — list stored workflows for the project list (DESIGN.md §6).
+ *
+ * Each entry carries both the routing/directory `name` (still used to build
+ * links and URLs — DESIGN.md §6) and the resolved `displayName`
+ * (`document.title || document.workflowType`, never the directory name). The
+ * document is loaded via the store (no YAML parsing duplicated here). A workflow
+ * that fails to load falls back to its directory name so one broken project
+ * doesn't break the whole list.
+ */
 export const GET: RequestHandler = async () => {
-  const workflows = await workflowStore.list();
+  const names = await workflowStore.list();
+  const workflows = await Promise.all(
+    names.map(async (name) => {
+      try {
+        const { document } = await workflowStore.load(name);
+        return { name, displayName: document.title || document.workflowType };
+      } catch {
+        return { name, displayName: name };
+      }
+    }),
+  );
   return json({ workflows });
 };
 

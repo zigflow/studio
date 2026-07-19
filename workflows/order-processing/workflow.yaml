@@ -3,6 +3,7 @@ document:
   taskQueue: order-processing
   workflowType: orderProcessing
   version: 0.1.0
+  title: Order Processing
 do:
   - orderProcessing:
       metadata:
