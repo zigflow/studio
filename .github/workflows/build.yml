@@ -59,6 +59,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Locale duplication check
+        run: npm run check:locales
+
       - name: Linting
         run: npm run lint
 

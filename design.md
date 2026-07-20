@@ -522,6 +522,12 @@ customers who need it.
   for anything unmatched) and `en-GB`. Locale is determined **solely** from
   the browser's `Accept-Language` header, resolved server-side per request —
   there is no in-app language switcher and no locale persistence to build yet.
+  A non-base locale file must carry **only** values that differ from the base
+  (`en`); byte-identical duplicates (and orphan keys the base lacks) are
+  rejected by `npm run check:locales` (`scripts/check-locale-duplication.mjs`),
+  wired into `npm run check` and CI so the cleanup can't silently regress. This
+  reads the base/locale list from the inlang config, so new locales are covered
+  automatically.
   This is a binding constraint on every component-building step from here on
   (inspector forms, canvas, node palette, …): new components must be authored
   against the i18n library, not with inline English. **Follow-up:** the

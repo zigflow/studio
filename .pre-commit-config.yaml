@@ -54,4 +54,11 @@ repos:
       - id: helm-docs-built
         args:
           - --template-files=./charts/zigflow/README.tpl
+  - repo: local
+    hooks:
+      - id: locale-dedupe
+        name: Check locale duplication
+        language: unsupported
+        entry: node ./scripts/check-locale-duplication.mjs
+        pass_filenames: false
 exclude: charts/.*/README.md

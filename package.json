@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check": "npm run check:locales && npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:locales": "node scripts/check-locale-duplication.mjs",
     "check:watch": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "dev": "vite dev",
     "format": "prettier --write .",
