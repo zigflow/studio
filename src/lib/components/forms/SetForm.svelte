@@ -45,7 +45,7 @@
 {/if}
 
 {#each entries as entry, index (index)}
-  <div class="row">
+  <div class="entry">
     <label>
       <span>{m.form_set_key()}</span>
       <input
@@ -72,10 +72,16 @@
 <button type="button" onclick={addEntry}>{m.form_set_add()}</button>
 
 <style>
-  .row {
+  /* Stack Key/Value/remove vertically (label above field) so the row never
+     overflows the fixed-width inspector panel — mirrors SwitchForm's `.case`
+     convention for a repeated group of fields. */
+  .entry {
     display: flex;
-    align-items: flex-end;
-    gap: 0.4rem;
-    margin-bottom: 0.4rem;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.4rem;
   }
 </style>
