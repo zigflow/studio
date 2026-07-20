@@ -19,6 +19,12 @@
     kind: TaskKind;
     siblingNames: string[];
     renameError: RenameOutcome | null;
+    /**
+     * Whether the selected task lives at the root scope (a top-level workflow
+     * entry). Same root detection the palette uses (DESIGN.md §1.2/§6); for a
+     * root `do` task the rename field is relabelled to "Workflow Type".
+     */
+    atRoot: boolean;
     /** Selected task is first in its scope — disables "move up". */
     first: boolean;
     /** Selected task is last in its scope — disables "move down". */
@@ -38,6 +44,7 @@
     kind,
     siblingNames,
     renameError,
+    atRoot,
     first,
     last,
     onrename,
@@ -47,6 +54,12 @@
     ondelete,
     ondrill,
   }: Props = $props();
+
+  // A root-scope `do` task IS a top-level workflow, so its name is its Temporal
+  // workflow type (§1.2) — the rename field is relabelled accordingly. This is a
+  // deliberate distinction, not a synonym for "Name": see inspector_name_label
+  // vs inspector_workflow_type_label.
+  const isRootWorkflow = $derived(atRoot && kind === 'do');
 
   // Local edit buffer for the name; committed on blur/Enter so we don't rename on
   // every keystroke. Snapshotted once (the parent keys this component by node id);
@@ -89,7 +102,11 @@
   </div>
 
   <label>
-    <span>{m.inspector_name_label()}</span>
+    <span
+      >{isRootWorkflow
+        ? m.inspector_workflow_type_label()
+        : m.inspector_name_label()}</span
+    >
     <input
       value={nameInput}
       oninput={(e) => (nameInput = e.currentTarget.value)}
@@ -100,6 +117,9 @@
     <p class="error">{m.inspector_rename_error_duplicate()}</p>
   {:else if renameError === 'empty'}
     <p class="error">{m.inspector_rename_error_empty()}</p>
+  {/if}
+  {#if isRootWorkflow}
+    <p class="hint">{m.inspector_workflow_type_note()}</p>
   {/if}
 
   <p class="kind-row">{m.inspector_kind_label()}: {kindLabel(kind)}</p>

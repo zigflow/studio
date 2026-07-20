@@ -50,16 +50,19 @@
         oninput={(e) => onsummary(e.currentTarget.value)}></textarea>
     </label>
 
-    <!-- Read-only: directory (routing id), version (Publish-time only, §5.4), and
-       dsl (never user-editable). -->
+    <!-- Read-only: directory (routing id), workflowType (derived — §1.2),
+       version (Publish-time only, §5.4), and dsl (never user-editable). -->
     <dl>
       <dt>{m.details_directory()}</dt>
       <dd>{directory}</dd>
+      <dt>{m.details_workflow_type()}</dt>
+      <dd>{document.workflowType}</dd>
       <dt>{m.details_version()}</dt>
       <dd>{document.version}</dd>
       <dt>{m.details_dsl()}</dt>
       <dd>{document.dsl}</dd>
     </dl>
+    <p class="note">{m.details_workflow_type_note()}</p>
   </section>
 {/if}
 
@@ -114,5 +117,11 @@
     margin: 0;
     color: #0f172a;
     overflow-wrap: anywhere;
+  }
+
+  .note {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.78rem;
   }
 </style>

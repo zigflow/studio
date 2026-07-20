@@ -631,6 +631,7 @@
               kind={selectedNode.kind}
               siblingNames={scopeSiblings}
               {renameError}
+              atRoot={scopePath.length === 0}
               first={selectedFirst}
               last={selectedLast}
               onrename={renameSelected}

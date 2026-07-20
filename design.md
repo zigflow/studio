@@ -391,7 +391,12 @@ customers who need it.
   - `version` — **read-only** for now; only ever set at Publish time (§5.4, not
     built), so no editor until then.
   - `dsl` — **never** user-editable.
-  - `workflowType` — **derived**, never hand-edited (§1.2).
+  - `workflowType` — **derived**, never hand-edited (§1.2). Surfaced as a
+    **read-only "Workflow Type" row** in the panel (alongside Directory/Version/
+    DSL) with a muted note that it's auto-derived from the *first* top-level
+    workflow's name and any direct edit is overwritten on save. It is edited
+    only indirectly, by renaming the first root workflow (see the Inspector
+    relabel below).
   - Directory (the routing/filesystem name) is **not a document field at all**
     and stays permanently read-only.
   - **Rendering caveat:** the panel (`WorkflowDetails.svelte`) is rendered
@@ -516,6 +521,18 @@ customers who need it.
   dropdown — editing such a field would coerce it to an in-scope option.
   A documented limitation, revisited only if cross-scope gotos prove common
   in practice.
+  - **Root-scope workflow relabel.** For a `do` task at the **root** scope (a
+    top-level workflow entry — reusing the same `atRoot` detection the palette's
+    root restriction uses, §6/§1.2), the rename field is labelled **"Workflow
+    Type"** instead of "Name", with a note that it sets *this* workflow's own
+    type. It stays fully editable via the same `renameTask` call — only the
+    label/copy change. This uses a **dedicated** message key
+    `inspector_workflow_type_label` (never `inspector_name_label`), deliberately
+    marking that a root workflow's name *is* its Temporal workflow type, not a
+    cosmetic label swap. It differs from the read-only Workflow Type row in
+    Workflow Details: that row only ever mirrors the *first* workflow (§1.2), so
+    renaming a second/third root workflow here doesn't change that document
+    field.
 - **Internationalisation (i18n).** All user-visible text in the UI must go
   through an i18n library — there are no hardcoded strings in components. For
   this PoC only two locales are supported: `en` (US English, and the fallback
