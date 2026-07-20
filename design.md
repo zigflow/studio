@@ -173,8 +173,8 @@ task missing one. Call it:
   for `do`/`for`/`fork` there is a single child list, so `field` is
   redundant but harmless.
 - **`treeToGraph.ts`** — pure projection: one scope's `TaskList` → SvelteFlow
-  nodes + edges. Two layouts:
-  - **`sequential`** (root, and `do`/`for`/`try` bodies): vertical stack,
+  nodes + edges. Three layouts:
+  - **`sequential`** (`do`/`for`/`try` bodies): vertical stack,
     array-order position, solid edges between consecutive nodes. A `for`
     body is entered with `field: 'do'`, the same as a plain `do` — a `for`
     task carries both `for` (config) and `do` (body), and only the `do`
@@ -182,12 +182,20 @@ task missing one. Call it:
     before `do`, so a loop is not misread as a plain `do`.
   - **`parallel`** (`fork.branches`): horizontal lanes, no edges between
     them (they run concurrently, not in sequence).
+  - **`independent`** (the **root** scope, empty `ScopePath`): vertical stack
+    of unconnected cards — **no edges and no connection handles**. Top-level
+    workflows are independent (§1.2): array order only feeds the `workflowType`
+    sync rule, never execution order, so any edge or connector dot between them
+    would wrongly imply a pipeline. Handles are suppressed via a `showHandles`
+    flag on the node data (false only for this layout). `goto` edges can't
+    arise here anyway — Switch can't appear at root under the
+    root-restricted-to-`do` rule (§6).
   - Plus **derived, informational `goto` edges** for Switch cases whose
-    `then` names a sibling task — dashed, never written back to the tree.
-    These are derived for Switch cases only. §1.1 notes any task's `then`
-    can be a goto; such a `then` is preserved verbatim in the tree (it
-    stays authoritative), but only Switch's is drawn as an edge — a
-    non-Switch goto has no visual.
+    `then` names a sibling task — dashed, never written back to the tree
+    (`sequential`/`parallel` only; never at root). These are derived for Switch
+    cases only. §1.1 notes any task's `then` can be a goto; such a `then` is
+    preserved verbatim in the tree (it stays authoritative), but only Switch's
+    is drawn as an edge — a non-Switch goto has no visual.
 - **`mutations.ts`** — the only functions that change the tree:
   `renameTask`, `updateTaskBody`, `addTask`, `removeTask`, `moveTask`,
   `ensureTaskIds`, `syncWorkflowType`. All operate on a resolved
@@ -337,10 +345,29 @@ customers who need it.
     label tasks; it is stated here as the general rule so future work doesn't
     reintroduce the project-name mixup.
 - **Editor** (`/workflows/[name]/[...scope]`) — three-pane layout:
-  - Left: read-only workflow details (task queue, version, DSL) — matches
-    Zigflow's own "Workflow Details" panel.
+  - Left: two stacked sections. **Top (primary, most of the height): a node
+    palette** — the single list of which kinds can be added in the current
+    scope. Each kind is one chip that is **both clickable** (appends a node of
+    that kind to the *end* of the current scope — the discoverable,
+    keyboard-accessible path) **and draggable** onto the canvas (same append; a
+    mouse accelerator). There is deliberately no separate dropdown/"Add" control
+    — the chips are the one place kinds are listed. **At the root scope the
+    palette offers only `do`** (empty `ScopePath` ⇒ every root entry must be a
+    `do`-kind workflow, §1.2); deeper scopes offer all of `TASK_KINDS`. The
+    heading/hint are scope-aware ("Add a workflow" at root vs "Add a node"
+    deeper). **Below (demoted, smaller): the "Workflow Details" panel**, now
+    partly editable — see the document-field rule below.
   - Center: the canvas — breadcrumb (scope path) + SvelteFlow view of the
-    current scope + "+ Add Node" control. The breadcrumb's root segment is a
+    current scope + "+ Add Node" control. **Dropping a palette chip anywhere on
+    the canvas always appends to the end of the current scope's list** — the
+    drop position is never read, so this introduces no free XY placement and
+    array order stays the only ordering (§3); reordering is the inspector's
+    move-up/move-down controls. **At the root scope the canvas draws the
+    top-level workflow cards with no edges and no connection handles between
+    them** — they are independent (§1.2), so array order is meaningful only for
+    the `workflowType` derivation, never for implying sequential execution; the
+    connecting line + connector dots appear only at non-root scopes (a `do`/
+    `for`/`try` body). The breadcrumb's root segment is a
     generic, translated "Workflow" label (not the project name — that already
     sits in the header, and the root scope's label is a distinct identifier
     from the project name); every later segment is the actual scope-path task
@@ -350,6 +377,33 @@ customers who need it.
     metadata when nothing's selected). Workflow-global save/validation
     errors are *not* shown here — they render as a banner below the header
     (see **Save & dirty state** below).
+- **Document-field editability** (the "Workflow Details" panel). Edits write
+  directly into the same reactive `workflow` object task edits use, so they ride
+  the existing dirty/`save()` plumbing with nothing new added. Per field:
+  - `taskQueue` — **editable** (required by the schema).
+  - `title`, `summary` — **editable, optional**: clearing the input removes the
+    property entirely rather than storing `""` (same convention as the
+    inspector's optional fields, `writeForTask` in `inspectorForms.ts`).
+  - `tags` — editable per schema but a key/value map; a dedicated editor is
+    **deferred as a follow-up**, not wired here yet. (Its values are `unknown`,
+    not just strings, so the Set task's string key/value form can't be reused
+    verbatim without risking lossy coercion — it needs its own typed editor.)
+  - `version` — **read-only** for now; only ever set at Publish time (§5.4, not
+    built), so no editor until then.
+  - `dsl` — **never** user-editable.
+  - `workflowType` — **derived**, never hand-edited (§1.2).
+  - Directory (the routing/filesystem name) is **not a document field at all**
+    and stays permanently read-only.
+  - **Rendering caveat:** the panel (`WorkflowDetails.svelte`) is rendered
+    **client-only** (`{#if browser}` *inside* the component, like
+    `Canvas.svelte`). SSR-hydrated inputs on this page do not get their
+    `oninput` handlers wired — a latent hydration issue that also affects the
+    inspector when it is server-rendered via a `?selected=` deep link (it
+    normally dodges this because it is created client-side on click); the
+    palette, though SSR'd, is unaffected. Keeping the gate inside the component
+    (not around it in the page) avoids disturbing sibling hydration (the
+    palette). Root cause is unresolved and worth a dedicated look — see the
+    build note.
 - **Scope lives in the URL** (`[...scope]`, one rest-param route — a zero-
   segment match is the root, so it also covers `/workflows/[name]`). This is
   what makes refresh, back/forward, and shared links open the drilled-into

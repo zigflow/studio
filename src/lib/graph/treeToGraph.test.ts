@@ -53,6 +53,27 @@ describe('treeToGraph — parallel', () => {
   });
 });
 
+describe('treeToGraph — independent (root)', () => {
+  it('produces nodes but no edges at all (§1.2: independent top-level workflows)', () => {
+    const graph = treeToGraph(threeStep(), 'independent');
+    expect(graph.nodes.map((n) => n.name)).toEqual(['one', 'two', 'three']);
+    expect(graph.edges).toEqual([]);
+  });
+
+  it('emits no goto edges even when a Switch names a sibling', () => {
+    const list: TaskList = [
+      {
+        route: {
+          switch: [{ toB: { when: '${ .ok }', then: 'b' } }],
+          metadata: { __zigflow_id: 'id-switch' },
+        },
+      },
+      { b: { set: { v: 1 }, metadata: { __zigflow_id: 'id-b' } } },
+    ];
+    expect(treeToGraph(list, 'independent').edges).toEqual([]);
+  });
+});
+
 describe('treeToGraph — goto edges', () => {
   it('derives a goto edge for a Switch case naming a sibling', () => {
     const list: TaskList = [

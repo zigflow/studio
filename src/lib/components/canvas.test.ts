@@ -61,6 +61,18 @@ describe('toFlowNodes', () => {
     // sequential → vertical offset by index.
     expect(nodes[0].position).toEqual({ x: 0, y: 0 });
     expect(nodes[1].position.y).toBeGreaterThan(0);
+
+    // sequential nodes carry connection handles.
+    expect(nodes.every((n) => n.data.showHandles)).toBe(true);
+  });
+
+  it('suppresses handles for the root independent layout', () => {
+    // Root: no edges between independent top-level workflows, so no handles.
+    const nodes = toFlowNodes(graph('independent'));
+    expect(nodes.every((n) => n.data.showHandles === false)).toBe(true);
+    // Still stacked vertically as plain cards.
+    expect(nodes[0].position).toEqual({ x: 0, y: 0 });
+    expect(nodes[1].position.y).toBeGreaterThan(0);
   });
 
   it('lays fork branches out horizontally in parallel layout', () => {

@@ -90,8 +90,16 @@ export interface ScopeStep {
  */
 export type ScopePath = ScopeStep[];
 
-/** How a scope's nodes are arranged (DESIGN.md §3). */
-export type FlowLayout = 'sequential' | 'parallel';
+/**
+ * How a scope's nodes are arranged (DESIGN.md §3):
+ * - `sequential` — vertical chain with solid execution-order edges (`do`/`for`/
+ *   `try` bodies).
+ * - `parallel` — horizontal lanes, no sequence edges (`fork.branches`).
+ * - `independent` — the root scope: top-level workflows are independent (§1.2),
+ *   so nodes render with **no edges and no connection handles**; array order is
+ *   meaningful only for the `workflowType` derivation, never execution order.
+ */
+export type FlowLayout = 'sequential' | 'parallel' | 'independent';
 
 /** A projected task, ready for a canvas to render. */
 export interface FlowNode {
@@ -127,8 +135,15 @@ export interface FlowGraph {
   layout: FlowLayout;
 }
 
-/** Fork branches render as parallel lanes; every other scope is sequential. */
+/**
+ * The root scope (empty path) is `independent` — top-level workflows don't run
+ * in sequence (§1.2). Fork branches render as parallel lanes; every other scope
+ * is sequential.
+ */
 export function layoutForScope(path: ScopePath): FlowLayout {
+  if (path.length === 0) {
+    return 'independent';
+  }
   const last = path.at(-1);
   return last?.field === 'branches' ? 'parallel' : 'sequential';
 }

@@ -6,7 +6,11 @@
   import Canvas from '$lib/components/Canvas.svelte';
   import Inspector from '$lib/components/Inspector.svelte';
   import NodePalette from '$lib/components/NodePalette.svelte';
-  import type { CanvasActions } from '$lib/components/canvas';
+  import WorkflowDetails from '$lib/components/WorkflowDetails.svelte';
+  import {
+    type CanvasActions,
+    DND_TASK_KIND_MIME,
+  } from '$lib/components/canvas';
   import { applyRename } from '$lib/editor/commands';
   import type { RenameOutcome } from '$lib/editor/commands';
   import {
@@ -21,7 +25,7 @@
     ScopePath,
     TaskKind,
   } from '$lib/graph/model';
-  import { layoutForScope } from '$lib/graph/model';
+  import { TASK_KINDS, layoutForScope } from '$lib/graph/model';
   import {
     addTask,
     ensureTaskIds,
@@ -290,6 +294,63 @@
     clearSaveFeedback();
   }
 
+  /**
+   * Drop a dragged palette kind onto the canvas. Deliberately identical to the
+   * "Add Node" button: it appends to the END of the current scope (no cursor
+   * position is read), so this drag mechanic introduces no free XY placement —
+   * array order stays the only ordering (DESIGN.md §3).
+   */
+  function onCanvasDragOver(event: DragEvent) {
+    if (event.dataTransfer?.types.includes(DND_TASK_KIND_MIME)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  function onCanvasDrop(event: DragEvent) {
+    const kind = event.dataTransfer?.getData(DND_TASK_KIND_MIME);
+    if (!kind || !(TASK_KINDS as readonly string[]).includes(kind)) {
+      return;
+    }
+    event.preventDefault();
+    addNode(kind as TaskKind);
+  }
+
+  /**
+   * Document-metadata edits (DESIGN.md §6). These mutate the same reactive
+   * `workflow` object task edits use, so `dirty` and `save()` pick them up with
+   * no extra plumbing. Optional fields (title/summary) are removed when cleared,
+   * not stored as "" — matching the inspector's optional-field convention
+   * (see writeForTask in inspectorForms.ts).
+   *
+   * Each edit **reassigns** `workflow.document` to a fresh object rather than
+   * mutating a key in place. `dirty` compares `serializeWorkflow(workflow)`,
+   * which only enumerates the keys that exist — so *adding* a previously-absent
+   * optional key (e.g. first `title`) wouldn't invalidate the derived if we
+   * mutated in place. Replacing the whole `document` reference always does.
+   */
+  function setTaskQueue(value: string) {
+    if (!workflow) {
+      return;
+    }
+    workflow.document = { ...workflow.document, taskQueue: value };
+    clearSaveFeedback();
+  }
+
+  function setOptionalDoc(field: 'title' | 'summary', value: string) {
+    if (!workflow) {
+      return;
+    }
+    const nextDoc = { ...workflow.document };
+    if (value.trim() !== '') {
+      nextDoc[field] = value;
+    } else {
+      delete nextDoc[field];
+    }
+    workflow.document = nextDoc;
+    clearSaveFeedback();
+  }
+
   function renameSelected(newName: string) {
     const list = currentList();
     const id = selectedId;
@@ -533,24 +594,28 @@
     {/if}
 
     <div class="body">
-      <aside class="details">
-        <h2>{m.details_heading()}</h2>
-        <dl>
-          <dt>{m.details_directory()}</dt>
-          <dd>{data.name}</dd>
-          <dt>{m.details_task_queue()}</dt>
-          <dd>{workflow.document.taskQueue}</dd>
-          <dt>{m.details_version()}</dt>
-          <dd>{workflow.document.version}</dd>
-          <dt>{m.details_dsl()}</dt>
-          <dd>{workflow.document.dsl}</dd>
-        </dl>
+      <aside class="sidebar">
+        <section class="palette-section">
+          <NodePalette onadd={addNode} atRoot={scopePath.length === 0} />
+        </section>
+
+        <WorkflowDetails
+          directory={data.name}
+          document={workflow.document}
+          ontaskqueue={setTaskQueue}
+          ontitle={(v) => setOptionalDoc('title', v)}
+          onsummary={(v) => setOptionalDoc('summary', v)}
+        />
       </aside>
 
       <main class="stage">
-        <NodePalette onadd={addNode} />
         <Breadcrumb path={scopePath} onnavigate={navigate} />
-        <div class="canvas-wrap">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="canvas-wrap"
+          ondragover={onCanvasDragOver}
+          ondrop={onCanvasDrop}
+        >
           {#if graph}
             <Canvas {graph} {selectedId} {actions} />
           {/if}
@@ -700,40 +765,19 @@
     min-height: 0;
   }
 
-  .details {
-    width: 220px;
-    padding: 1rem;
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 240px;
     border-right: 1px solid #e2e8f0;
     overflow: auto;
   }
 
-  .details h2 {
-    margin: 0 0 0.75rem;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #64748b;
-  }
-
-  dl {
-    margin: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.15rem 0;
-  }
-
-  dt {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: #94a3b8;
-    margin-top: 0.5rem;
-  }
-
-  dd {
-    margin: 0;
-    font-size: 0.9rem;
-    overflow-wrap: anywhere;
+  /* MAIN section — the node palette takes most of the sidebar height. */
+  .palette-section {
+    flex: 1;
+    min-height: 0;
+    padding: 1rem;
   }
 
   .stage {

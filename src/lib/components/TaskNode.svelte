@@ -60,7 +60,12 @@
   const subtitle = $derived(subtitleText(taskSubtitle(flow.task)));
 </script>
 
-<Handle type="target" position={Position.Top} isConnectable={false} />
+<!-- Handles are suppressed at the root `independent` layout (data.showHandles):
+     top-level workflows have no edges between them (§1.2), so connector dots
+     would wrongly imply a sequence. -->
+{#if data.showHandles}
+  <Handle type="target" position={Position.Top} isConnectable={false} />
+{/if}
 
 <!-- The card is purely informational (DESIGN.md §6): single-click selects the
      task and double-click drills into a container (both handled at the canvas
@@ -74,7 +79,9 @@
   {/if}
 </div>
 
-<Handle type="source" position={Position.Bottom} isConnectable={false} />
+{#if data.showHandles}
+  <Handle type="source" position={Position.Bottom} isConnectable={false} />
+{/if}
 
 <style>
   .task-node {

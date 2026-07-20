@@ -116,16 +116,31 @@ function gotoEdges(nodes: FlowNode[]): FlowEdge[] {
 /**
  * Project a scope's `TaskList` into a {@link FlowGraph}.
  *
- * `sequential` (root, `do`/`for`/`try` bodies) stacks nodes in array order with
- * solid edges between consecutive tasks. `parallel` (`fork.branches`) has no
- * sequence edges — branches run concurrently. Both layouts include derived
- * `goto` edges from Switch cases.
+ * - `sequential` (`do`/`for`/`try` bodies): nodes in array order with solid
+ *   edges between consecutive tasks, plus derived `goto` edges from Switch cases.
+ * - `parallel` (`fork.branches`): no sequence edges (branches run concurrently),
+ *   plus `goto` edges.
+ * - `independent` (root): **no edges at all** — top-level workflows are
+ *   independent (§1.2), and Switch (the only source of `goto` edges) can't
+ *   appear at root under the root-restricted-to-`do` rule anyway.
  */
 export function treeToGraph(list: TaskList, layout: FlowLayout): FlowGraph {
   const nodes = toNodes(list);
-  const edges =
-    layout === 'sequential'
-      ? [...sequenceEdges(nodes), ...gotoEdges(nodes)]
-      : gotoEdges(nodes);
+  let edges: FlowEdge[];
+  switch (layout) {
+    case 'sequential':
+      edges = [...sequenceEdges(nodes), ...gotoEdges(nodes)];
+      break;
+    case 'parallel':
+      edges = gotoEdges(nodes);
+      break;
+    case 'independent':
+      edges = [];
+      break;
+    default: {
+      const unreachable: never = layout;
+      throw new Error(`Unhandled layout: ${String(unreachable)}`);
+    }
+  }
   return { nodes, edges, layout };
 }

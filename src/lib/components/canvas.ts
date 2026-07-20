@@ -40,6 +40,12 @@ export interface TaskNodeData {
   first: boolean;
   /** Last in its scope — used to disable "move down". */
   last: boolean;
+  /**
+   * Whether to render connection handles on the card. False for the root
+   * `independent` layout, where top-level workflows have no edges between them
+   * (§1.2) and connector dots would wrongly imply a pipeline.
+   */
+  showHandles: boolean;
   [key: string]: unknown;
 }
 
@@ -80,6 +86,14 @@ export interface CanvasSelection {
 /** Svelte context key for {@link CanvasSelection}. */
 export const canvasSelectionKey = Symbol('zigflow.canvasSelection');
 
+/**
+ * `dataTransfer` MIME for dragging a task kind from the palette onto the canvas.
+ * The payload is only the {@link TaskKind}; the drop *always appends* to the end
+ * of the current scope's list (never a cursor-derived index), keeping array
+ * order the sole ordering per DESIGN.md §3.
+ */
+export const DND_TASK_KIND_MIME = 'application/x-zigflow-task-kind';
+
 const NODE_STRIDE_Y = 132;
 const NODE_STRIDE_X = 260;
 
@@ -87,9 +101,9 @@ const SEQUENCE_EDGE_STYLE = 'stroke:#94a3b8;';
 const GOTO_EDGE_STYLE = 'stroke:#b45309;stroke-dasharray:6 4;';
 
 /**
- * Position a node from its array index. `sequential` stacks vertically (execution
- * order); `parallel` (fork branches) lays lanes out horizontally, since branches
- * run concurrently rather than in sequence.
+ * Position a node from its array index. `parallel` (fork branches) lays lanes
+ * out horizontally, since branches run concurrently; `sequential` and the root
+ * `independent` layout both stack vertically (the latter as unconnected cards).
  */
 export function nodePosition(
   index: number,
@@ -103,6 +117,9 @@ export function nodePosition(
 /** Project the graph's nodes into positioned SvelteFlow nodes. */
 export function toFlowNodes(graph: FlowGraph): TaskFlowNode[] {
   const lastIndex = graph.nodes.length - 1;
+  // Root (`independent`) has no edges, so its cards render without handles —
+  // otherwise the connector dots would imply a sequence (§1.2, §3).
+  const showHandles = graph.layout !== 'independent';
   return graph.nodes.map((node) => ({
     id: node.id,
     type: 'task',
@@ -112,6 +129,7 @@ export function toFlowNodes(graph: FlowGraph): TaskFlowNode[] {
       container: isContainerKind(node.kind),
       first: node.index === 0,
       last: node.index === lastIndex,
+      showHandles,
     },
     draggable: false,
   }));
