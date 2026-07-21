@@ -7,6 +7,7 @@
   import { untrack } from 'svelte';
 
   import CallHttpForm from './forms/CallHttpForm.svelte';
+  import CommonFieldsForm from './forms/CommonFieldsForm.svelte';
   import ForForm from './forms/ForForm.svelte';
   import SetForm from './forms/SetForm.svelte';
   import SwitchForm from './forms/SwitchForm.svelte';
@@ -140,6 +141,16 @@
     <p class="hint">{m.inspector_fallback_hint()}</p>
     <pre>{JSON.stringify(task, null, 2)}</pre>
   {/if}
+
+  <!-- Common TaskBase fields (if/input/output/export/metadata, and `then` as its
+       last field), shared by every kind, in addition to the kind form above
+       (DESIGN.md §6). `then` is hidden for a root do-workflow (§1.2). -->
+  <CommonFieldsForm
+    {task}
+    {siblingNames}
+    hideThen={isRootWorkflow}
+    onchange={onpatch}
+  />
 </div>
 
 <style>

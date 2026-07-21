@@ -533,6 +533,27 @@ customers who need it.
     Workflow Details: that row only ever mirrors the *first* workflow (§1.2), so
     renaming a second/third root workflow here doesn't change that document
     field.
+  - **Common `TaskBase` fields** (`CommonFieldsForm.svelte`, a collapsed
+    "Advanced" section shown for *every* kind, below the kind-specific form).
+    Every task extends `taskBase`, so these are shared: `if` (a runtime-
+    expression guard); `input.schema`, `output` (`as` + `schema`), `export`
+    (`as` + `schema`); and `metadata` (a `heartbeat` `Duration` reusing `wait`'s
+    duration inputs — integer-only per the schema — plus a generic plaintext
+    key/value list for other entries). Conventions reused, not reinvented:
+    optional fields are removed when cleared (like Title/Summary); `as` uses the
+    same string-vs-object parse as `set` values (`parseSetValue`); each `schema`
+    is an arbitrary embedded JSON-Schema doc edited as a **JSON textarea**
+    (invalid JSON shows an inline error and keeps the last valid value). The
+    metadata key/value list **never** exposes or overwrites `metadata.__zigflow_id`
+    (§2.3) or `heartbeat`, and preserves any non-string metadata entries
+    untouched. The read/write logic lives in `inspectorForms.ts`
+    (`read/writeCommonFields`, `writeMetadata`, `writeThen`), unit-tested.
+  - **Task-level `then`** ("On completion") is a dropdown at the bottom of the
+    inspector, reusing `thenOptions(siblingNames)`; `continue` (the default)
+    drops the property. It is **hidden for a root do-workflow** — top-level
+    workflows are independent (§1.2), so a goto between them is meaningless; any
+    `then` present on such a workflow in loaded YAML is preserved without
+    exposing an editor (§1.1). (Distinct from Switch's per-case `then`.)
 - **Internationalisation (i18n).** All user-visible text in the UI must go
   through an i18n library — there are no hardcoded strings in components. For
   this PoC only two locales are supported: `en` (US English, and the fallback
