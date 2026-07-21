@@ -399,16 +399,20 @@ customers who need it.
     relabel below).
   - Directory (the routing/filesystem name) is **not a document field at all**
     and stays permanently read-only.
-  - **Rendering caveat:** the panel (`WorkflowDetails.svelte`) is rendered
-    **client-only** (`{#if browser}` *inside* the component, like
-    `Canvas.svelte`). SSR-hydrated inputs on this page do not get their
-    `oninput` handlers wired — a latent hydration issue that also affects the
-    inspector when it is server-rendered via a `?selected=` deep link (it
-    normally dodges this because it is created client-side on click); the
-    palette, though SSR'd, is unaffected. Keeping the gate inside the component
-    (not around it in the page) avoids disturbing sibling hydration (the
-    palette). Root cause is unresolved and worth a dedicated look — see the
-    build note.
+  - **Rendering:** the panel (`WorkflowDetails.svelte`) is server-rendered like
+    the rest of the page — no `{#if browser}` gate. An earlier note here claimed
+    a "latent hydration issue" whereby SSR'd form inputs (here and in the
+    inspector via a `?selected=` deep link) never got their `oninput` handlers
+    wired, worked around by making the panel client-only. Root-causing it proved
+    that claim false: in a production build the inputs hydrate and bind
+    correctly every time, sequentially *and* under parallel load. The symptom
+    only ever appeared against a **cold Vite dev server hit by concurrent
+    first-requests** — a dev-server compile race (the on-demand SSR module graph
+    served partially before it finished), i.e. a Playwright-parallel-workers
+    test artifact, not an app bug. The fix was to delete the workaround; nothing
+    in the inspector/`CommonFieldsForm` was ever gated (their "client-only"
+    reputation was the same misdiagnosis). Only `Canvas.svelte` stays client-
+    gated, for the real reason that SvelteFlow needs the DOM to measure/lay out.
 - **Scope lives in the URL** (`[...scope]`, one rest-param route — a zero-
   segment match is the root, so it also covers `/workflows/[name]`). This is
   what makes refresh, back/forward, and shared links open the drilled-into
