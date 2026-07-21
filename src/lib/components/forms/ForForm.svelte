@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { readForForm, writeForTask } from '$lib/editor/inspectorForms';
-  import type { ForForm } from '$lib/editor/inspectorForms';
   import { m } from '$lib/paraglide/messages';
   import type { ForTask } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
+
+  import { readForForm, writeForTask } from './forForm';
+  import type { ForForm } from './forForm';
 
   let { task, onchange }: { task: ForTask; onchange: (t: ForTask) => void } =
     $props();

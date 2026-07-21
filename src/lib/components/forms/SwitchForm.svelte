@@ -1,13 +1,11 @@
 <script lang="ts">
-  import {
-    readSwitchCases,
-    thenOptions,
-    writeSwitchTask,
-  } from '$lib/editor/inspectorForms';
-  import type { SwitchCaseForm } from '$lib/editor/inspectorForms';
+  import { thenOptions } from '$lib/editor/commonFields';
   import { m } from '$lib/paraglide/messages';
   import type { SwitchTask } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
+
+  import { readSwitchCases, writeSwitchTask } from './switchForm';
+  import type { SwitchCaseForm } from './switchForm';
 
   let {
     task,

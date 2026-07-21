@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { readHttpForm, writeHttpTask } from '$lib/editor/inspectorForms';
-  import type { HttpForm } from '$lib/editor/inspectorForms';
   import { m } from '$lib/paraglide/messages';
   import type { CallHttpTask } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
+
+  import { readHttpForm, writeHttpTask } from './callHttpForm';
+  import type { HttpForm } from './callHttpForm';
 
   let {
     task,

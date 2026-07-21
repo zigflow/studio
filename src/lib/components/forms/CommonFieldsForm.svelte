@@ -1,12 +1,12 @@
 <script lang="ts">
   import {
     type CommonFieldsForm,
-    isInvalidJsonField,
     readCommonFields,
     thenOptions,
     writeCommonFields,
     writeThen,
-  } from '$lib/editor/inspectorForms';
+  } from '$lib/editor/commonFields';
+  import { isInvalidJsonField } from '$lib/editor/formValues';
   import { m } from '$lib/paraglide/messages';
   import type { Task } from '$lib/types/zigflow';
   import { untrack } from 'svelte';

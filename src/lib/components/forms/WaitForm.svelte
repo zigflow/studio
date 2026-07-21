@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { readWaitForm, writeWaitTask } from '$lib/editor/inspectorForms';
-  import type { WaitForm } from '$lib/editor/inspectorForms';
   import { m } from '$lib/paraglide/messages';
   import type { WaitTask } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
+
+  import { readWaitForm, writeWaitTask } from './waitForm';
+  import type { WaitForm } from './waitForm';
 
   let { task, onchange }: { task: WaitTask; onchange: (t: WaitTask) => void } =
     $props();

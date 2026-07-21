@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { RenameOutcome } from '$lib/editor/commands';
   import { containerField, isContainerKind } from '$lib/editor/drilldown';
-  import { isSetObjectForm } from '$lib/editor/inspectorForms';
   import type { ScopeField, TaskKind } from '$lib/graph/model';
   import { m } from '$lib/paraglide/messages';
   import type { Task } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
 
   import CommonFieldsForm from './forms/CommonFieldsForm.svelte';
+  import { isSetObjectForm } from './forms/setForm';
   import {
     type TaskFormComponent,
     fallbackForm,

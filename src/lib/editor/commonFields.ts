@@ -14,259 +14,37 @@
  * limitations under the License.
  */
 import type {
-  CallHttpTask,
   Duration,
   Export,
-  ExpressionDuration,
-  ForTask,
   Input,
   Output,
   Schema,
-  SetTask,
-  SwitchCase,
-  SwitchTask,
   TaskBase,
   TaskMetadata,
-  WaitTask,
 } from '../types/zigflow';
-import { endpointText } from './subtitle';
+import {
+  durationField,
+  formatJson,
+  formatSetValue,
+  isEmptyObject,
+  parseDurationField,
+  parseJsonField,
+  parseSetValue,
+} from './formValues';
 
 /**
- * Pure form ↔ task mappings for the inspector (DESIGN.md §6). Each `read*` pulls
- * a flat, string-friendly form model out of a task; each `write*` merges edited
- * values back onto the *original* task, so untouched parts — `TaskBase` fields
- * (`if`/`then`/`metadata`/…) and, for containers, nested task lists — are
- * preserved. Keeping this logic here (not in the Svelte components) makes the
- * edit→patch mapping unit-testable without a browser.
+ * The common `TaskBase` fields shared by *every* task kind (DESIGN.md §6):
+ * `if`/`input`/`output`/`export`/`then`/`metadata`. These read/write helpers
+ * edit those shared fields in addition to a kind's own form, preserving anything
+ * the editor doesn't surface (notably `metadata.__zigflow_id`, §2.3, and
+ * non-string metadata entries). Correctly centralized — not "yet another kind."
  */
 
-// --- shared value parsing ----------------------------------------------------
-
-const INTEGER = /^-?\d+$/;
-
-/**
- * Parse a `set` value string. Tries JSON first, so `true`/`42`/`"x"` become the
- * right primitive; anything that isn't valid JSON (notably a runtime expression
- * like `${ .x }`) is kept verbatim as a string.
- */
-export function parseSetValue(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return raw;
-  }
-}
-
-/** Render a `set` value back to an editable string (inverse of parseSetValue). */
-export function formatSetValue(value: unknown): string {
-  return typeof value === 'string' ? value : JSON.stringify(value);
-}
-
-/**
- * Parse one duration field: blank → omitted, an integer literal → a number, and
- * anything else (a runtime expression) kept as a string — matching the schema's
- * `integer | runtimeExpression` union for wait durations.
- */
-export function parseDurationField(raw: string): number | string | undefined {
-  const trimmed = raw.trim();
-  if (trimmed === '') {
-    return undefined;
-  }
-  return INTEGER.test(trimmed) ? Number(trimmed) : trimmed;
-}
-
-// --- set ---------------------------------------------------------------------
-
+/** A plaintext key/value pair (used by the metadata list; see `writeMetadata`). */
 export interface SetEntry {
   key: string;
   value: string;
 }
-
-/** Whether a `set` task uses the object form this editor supports (vs a string). */
-export function isSetObjectForm(
-  task: SetTask,
-): task is SetTask & { set: Record<string, unknown> } {
-  return typeof task.set === 'object' && task.set !== null;
-}
-
-export function readSetEntries(set: Record<string, unknown>): SetEntry[] {
-  return Object.entries(set).map(([key, value]) => ({
-    key,
-    value: formatSetValue(value),
-  }));
-}
-
-export function writeSetTask(task: SetTask, entries: SetEntry[]): SetTask {
-  const set: Record<string, unknown> = {};
-  for (const { key, value } of entries) {
-    if (key.trim() === '') {
-      continue;
-    }
-    set[key] = parseSetValue(value);
-  }
-  return { ...task, set };
-}
-
-// --- call: http --------------------------------------------------------------
-
-export interface HttpForm {
-  method: string;
-  endpoint: string;
-}
-
-export function readHttpForm(task: CallHttpTask): HttpForm {
-  return {
-    method: task.with.method,
-    endpoint: endpointText(task.with.endpoint),
-  };
-}
-
-export function writeHttpTask(
-  task: CallHttpTask,
-  form: HttpForm,
-): CallHttpTask {
-  return {
-    ...task,
-    with: {
-      ...task.with,
-      method: form.method,
-      endpoint: { uri: form.endpoint },
-    },
-  };
-}
-
-// --- wait --------------------------------------------------------------------
-
-export type WaitForm =
-  | {
-      mode: 'duration';
-      days: string;
-      hours: string;
-      minutes: string;
-      seconds: string;
-      milliseconds: string;
-    }
-  | { mode: 'until'; until: string };
-
-function durationField(value: number | string | undefined): string {
-  return value === undefined ? '' : String(value);
-}
-
-export function readWaitForm(task: WaitTask): WaitForm {
-  if ('until' in task.wait) {
-    return { mode: 'until', until: String(task.wait.until) };
-  }
-  const d = task.wait;
-  return {
-    mode: 'duration',
-    days: durationField(d.days),
-    hours: durationField(d.hours),
-    minutes: durationField(d.minutes),
-    seconds: durationField(d.seconds),
-    milliseconds: durationField(d.milliseconds),
-  };
-}
-
-export function writeWaitTask(task: WaitTask, form: WaitForm): WaitTask {
-  if (form.mode === 'until') {
-    return { ...task, wait: { until: form.until } };
-  }
-  const duration: ExpressionDuration = {};
-  const fields: ReadonlyArray<[keyof ExpressionDuration, string]> = [
-    ['days', form.days],
-    ['hours', form.hours],
-    ['minutes', form.minutes],
-    ['seconds', form.seconds],
-    ['milliseconds', form.milliseconds],
-  ];
-  for (const [field, raw] of fields) {
-    const parsed = parseDurationField(raw);
-    if (parsed !== undefined) {
-      duration[field] = parsed;
-    }
-  }
-  return { ...task, wait: duration };
-}
-
-// --- for ---------------------------------------------------------------------
-
-export interface ForForm {
-  in: string;
-  each: string;
-  at: string;
-  while: string;
-}
-
-export function readForForm(task: ForTask): ForForm {
-  return {
-    in: task.for.in,
-    each: task.for.each ?? '',
-    at: task.for.at ?? '',
-    while: task.while ?? '',
-  };
-}
-
-export function writeForTask(task: ForTask, form: ForForm): ForTask {
-  const forConfig: ForTask['for'] = { in: form.in };
-  if (form.each.trim() !== '') {
-    forConfig.each = form.each;
-  }
-  if (form.at.trim() !== '') {
-    forConfig.at = form.at;
-  }
-  // Spread preserves the loop body (`do`) and TaskBase fields; only the loop
-  // config and the optional `while` guard are replaced here.
-  const next: ForTask = { ...task, for: forConfig };
-  if (form.while.trim() !== '') {
-    next.while = form.while;
-  } else {
-    delete next.while;
-  }
-  return next;
-}
-
-// --- switch ------------------------------------------------------------------
-
-export interface SwitchCaseForm {
-  name: string;
-  when: string;
-  then: string;
-}
-
-/** The `then` options for a switch case: the three directives, then siblings. */
-export function thenOptions(siblingNames: string[]): string[] {
-  return ['continue', 'exit', 'end', ...siblingNames];
-}
-
-export function readSwitchCases(task: SwitchTask): SwitchCaseForm[] {
-  return task.switch.map((item) => {
-    const [name, branch] = Object.entries(item)[0];
-    return { name, when: branch.when ?? '', then: branch.then };
-  });
-}
-
-export function writeSwitchTask(
-  task: SwitchTask,
-  cases: SwitchCaseForm[],
-): SwitchTask {
-  const items = cases
-    .filter((entry) => entry.name.trim() !== '')
-    .map((entry) => {
-      const branch: SwitchCase = { then: entry.then };
-      if (entry.when.trim() !== '') {
-        branch.when = entry.when;
-      }
-      return { [entry.name]: branch };
-    });
-  return { ...task, switch: items };
-}
-
-// --- common TaskBase fields --------------------------------------------------
-//
-// Every task extends TaskBase (`if`/`input`/`output`/`export`/`then`/`metadata`).
-// These read/write helpers edit those shared fields in addition to a kind's own
-// form, preserving anything the editor doesn't surface (notably
-// `metadata.__zigflow_id`, §2.3, and non-string metadata entries).
 
 export interface DurationForm {
   days: string;
@@ -293,6 +71,16 @@ export interface CommonFieldsForm {
   metadata: SetEntry[];
 }
 
+/**
+ * The `then` options for a task-level `then` or a switch case: the three flow
+ * directives, then this scope's sibling task names. One central place for these
+ * (DESIGN.md §7), used identically by any task's own `then` (below) and by
+ * Switch cases (`switchForm.ts`'s component).
+ */
+export function thenOptions(siblingNames: string[]): string[] {
+  return ['continue', 'exit', 'end', ...siblingNames];
+}
+
 const EMPTY_DURATION_FORM: DurationForm = {
   days: '',
   hours: '',
@@ -300,35 +88,6 @@ const EMPTY_DURATION_FORM: DurationForm = {
   seconds: '',
   milliseconds: '',
 };
-
-/**
- * Validate/parse a JSON text field: blank is valid (→ undefined); otherwise it
- * must be valid JSON. Used for the `schema` sub-objects (arbitrary embeddable
- * JSON Schema documents) that don't warrant a structured form.
- */
-export function parseJsonField(raw: string): {
-  valid: boolean;
-  value: unknown;
-} {
-  const trimmed = raw.trim();
-  if (trimmed === '') {
-    return { valid: true, value: undefined };
-  }
-  try {
-    return { valid: true, value: JSON.parse(trimmed) };
-  } catch {
-    return { valid: false, value: undefined };
-  }
-}
-
-/** Whether a JSON text field has content that doesn't parse (drives inline errors). */
-export function isInvalidJsonField(raw: string): boolean {
-  return !parseJsonField(raw).valid;
-}
-
-function formatJson(value: unknown): string {
-  return value === undefined ? '' : JSON.stringify(value, null, 2);
-}
 
 function readDurationForm(duration: Duration | undefined): DurationForm {
   if (!duration) {
@@ -364,10 +123,6 @@ function buildIntegerDuration(form: DurationForm): Duration | undefined {
     }
   }
   return Object.keys(duration).length > 0 ? duration : undefined;
-}
-
-function isEmptyObject(obj: object): boolean {
-  return Object.keys(obj).length === 0;
 }
 
 /** Apply schema JSON to a container: blank removes it; invalid keeps the prior value. */

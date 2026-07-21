@@ -321,7 +321,7 @@
    * `workflow` object task edits use, so `dirty` and `save()` pick them up with
    * no extra plumbing. Optional fields (title/summary) are removed when cleared,
    * not stored as "" — matching the inspector's optional-field convention
-   * (see writeForTask in inspectorForms.ts).
+   * (see writeForTask in forms/forForm.ts).
    *
    * Each edit **reassigns** `workflow.document` to a fresh object rather than
    * mutating a key in place. `dirty` compares `serializeWorkflow(workflow)`,

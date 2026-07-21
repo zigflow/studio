@@ -383,7 +383,7 @@ customers who need it.
   - `taskQueue` — **editable** (required by the schema).
   - `title`, `summary` — **editable, optional**: clearing the input removes the
     property entirely rather than storing `""` (same convention as the
-    inspector's optional fields, `writeForTask` in `inspectorForms.ts`).
+    inspector's optional fields, `writeForTask` in `forms/forForm.ts`).
   - `tags` — editable per schema but a key/value map; a dedicated editor is
     **deferred as a follow-up**, not wired here yet. (Its values are `unknown`,
     not just strings, so the Set task's string key/value form can't be reused
@@ -509,8 +509,9 @@ customers who need it.
     list of paths + hints rather than click-to-navigate-to-the-exact-field —
     the schema's own error reporting wouldn't reliably support the latter.
     Revisit only if precise error localization becomes a priority.
-- **Inspector forms** — dedicated forms exist for `call`/http, `set` (the
-  object / key-value form), `wait`, `switch` (case list with `when`/`then`),
+- **Inspector forms** — dedicated forms exist for `call`/http, `set` (a
+  key/value form with a per-entry value type — see below), `wait`, `switch`
+  (case list with `when`/`then`),
   and `for`. `fork`/`try` show a pointer to their sub-canvas rather than an
   inline branch/step editor. A `set` given as a single expression string
   (the less common form) falls back to the generic JSON editor rather than
@@ -525,6 +526,30 @@ customers who need it.
   dropdown — editing such a field would coerce it to an in-scope option.
   A documented limitation, revisited only if cross-scope gotos prove common
   in practice.
+  - **`set` per-entry value types.** Each `set` entry carries an **explicit
+    value type** — string (default), boolean, number, null, json — chosen in a
+    selector beside its key, *not* inferred from the value's text on save. This
+    fixes a real bug in the earlier content-sniffing write path: a literal
+    string like `"42"` or `"true"` silently became the number 42 / boolean
+    `true`, with no way to store the string. The type drives both the value
+    input (plain text; a true/false select; a number input; no input for
+    `null`; or a **JSON textarea** for `json`) and read/write: `string` stores
+    the text verbatim, `boolean`/`number`/`null` store the real JS primitive,
+    and `json` parses the textarea — any valid JSON value (object, array, or a
+    bare scalar), with invalid JSON keeping the last valid value, matching (and
+    labelled "JSON" like) the schema textareas. `json` deliberately uses a
+    **raw JSON textarea**, not a recursive nested picker — `set` values are
+    unbounded JSON, and a recursive picker would re-solve the generic-schema-
+    form problem the per-kind registry was chosen to avoid, only rescoped to one
+    field; the swappable read/write contract (a key maps to whatever JS value
+    results) leaves a nested picker open later. On load, each entry's type is
+    inferred **once** from the value's actual JS type for display (a plain
+    object *and* an array both infer as `json`); after that it is explicit and
+    user-controlled, never re-inferred. Logic (including the load-time
+    inference, kept separate from the write path) lives in `forms/setForm.ts` —
+    `readSetEntries`, `writeSetTask`, `inferSetValueType`,
+    `coerceSetValueForType` — unit-tested. A `set` given as a single expression
+    string still routes to the JSON fallback rather than this form.
   - **Root-scope workflow relabel.** For a `do` task at the **root** scope (a
     top-level workflow entry — reusing the same `atRoot` detection the palette's
     root restriction uses, §6/§1.2), the rename field is labelled **"Workflow
@@ -544,13 +569,13 @@ customers who need it.
     (`as` + `schema`); and `metadata` (a `heartbeat` `Duration` reusing `wait`'s
     duration inputs — integer-only per the schema — plus a generic plaintext
     key/value list for other entries). Conventions reused, not reinvented:
-    optional fields are removed when cleared (like Title/Summary); `as` uses the
-    same string-vs-object parse as `set` values (`parseSetValue`); each `schema`
+    optional fields are removed when cleared (like Title/Summary); `as` uses a
+    string-vs-object parse (`parseSetValue`); each `schema`
     is an arbitrary embedded JSON-Schema doc edited as a **JSON textarea**
     (invalid JSON shows an inline error and keeps the last valid value). The
     metadata key/value list **never** exposes or overwrites `metadata.__zigflow_id`
     (§2.3) or `heartbeat`, and preserves any non-string metadata entries
-    untouched. The read/write logic lives in `inspectorForms.ts`
+    untouched. The read/write logic lives in `editor/commonFields.ts`
     (`read/writeCommonFields`, `writeMetadata`, `writeThen`), unit-tested.
   - **Task-level `then`** ("On completion") is a dropdown at the bottom of the
     inspector, reusing `thenOptions(siblingNames)`; `continue` (the default)
@@ -627,23 +652,9 @@ The task-form registry (`taskForms`, §6) gives every task kind a home; kinds
 without a dedicated editor yet point at the shared read-only fallback (a JSON
 view, or the "open the sub-canvas" hint for container kinds). Adding an editor
 is then a one-line swap of that kind's registry entry. Deferred, in intended
-order:
+order (the per-entry value-type selector that led this list is **done** — see
+§6, "`set` per-entry value types"):
 
-- **`set` — per-entry value-type selector.** The next form to harden. Each
-  `set` entry's value currently round-trips through a heuristic
-  (`parseSetValue`: try JSON, else keep the raw string), so a boolean, number,
-  or object is *inferred* rather than *chosen*. Planned: an explicit per-entry
-  type selector — **string (default), boolean, number, object, array**. For
-  `object`/`array` the value editor will be a **raw JSON textarea**,
-  deliberately *not* a recursive nested type-picker. `set` values are genuinely
-  unbounded JSON, and a fully recursive per-element picker would effectively
-  re-solve the same "generic schema-driven form" problem this project just
-  chose *not* to build at the task level — the per-kind form registry (§6) was
-  picked over a generic renderer — only rescoped to a single field. This does
-  **not** foreclose a nested picker later: a `set` entry's read/write contract
-  is just "key maps to whatever JS value results," so the value-editor
-  implementation is swappable without touching anything else. This is the
-  "audit-then-fix `set`" pass that immediately follows the registry.
 - **`set` — dot-notation keys (post-PoC).** Typing `data.key` to build
   `{ "data": { "key": … } }` is deferred. Open questions to resolve before it
   is built:
@@ -668,6 +679,32 @@ order:
   sub-canvas, so their inspector slot shows the sub-canvas hint rather than a
   form. `raise`/`listen`/`run` have no structured editor yet and show the
   read-only JSON view.
+
+### View generated YAML
+
+A future **"view generated YAML"** control that renders the whole Zigflow
+document as YAML, for when a decomposed form view (like `set`'s per-entry
+Inspector rows, §6) isn't enough and someone wants to see the actual output
+directly — e.g. to sanity-check what a Save will write, or to read the document
+while debugging a validation failure *before* hitting Save.
+
+Decided:
+
+- It **must** render through the same serializer the Save path already calls,
+  `stringifyWorkflowYaml` (`src/lib/yaml/serialize.ts`) — never a second,
+  independent YAML serialization. What the user previews has to be exactly what
+  Save writes; a parallel serializer could silently drift (§4, the single
+  validation/serialisation path; §7, "one central place for each kind of rule").
+
+Open (to decide when it's actually built):
+
+- **Live vs. saved source.** Show the *live* in-memory workflow (reflecting
+  unsaved edits), or only the last-saved on-disk version? Leaning **live** —
+  "see what my edit is about to produce" is the more useful case — but not
+  decided.
+- **UI placement & affordances.** A toolbar button vs. somewhere else; a modal
+  vs. a side panel; whether it needs a copy-to-clipboard convenience. Not
+  decided.
 
 ### i18n retrofit
 
