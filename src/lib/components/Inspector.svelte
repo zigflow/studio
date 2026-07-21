@@ -1,17 +1,18 @@
 <script lang="ts">
   import type { RenameOutcome } from '$lib/editor/commands';
   import { containerField, isContainerKind } from '$lib/editor/drilldown';
+  import { isSetObjectForm } from '$lib/editor/inspectorForms';
   import type { ScopeField, TaskKind } from '$lib/graph/model';
   import { m } from '$lib/paraglide/messages';
   import type { Task } from '$lib/types/zigflow';
   import { untrack } from 'svelte';
 
-  import CallHttpForm from './forms/CallHttpForm.svelte';
   import CommonFieldsForm from './forms/CommonFieldsForm.svelte';
-  import ForForm from './forms/ForForm.svelte';
-  import SetForm from './forms/SetForm.svelte';
-  import SwitchForm from './forms/SwitchForm.svelte';
-  import WaitForm from './forms/WaitForm.svelte';
+  import {
+    type TaskFormComponent,
+    fallbackForm,
+    taskForms,
+  } from './forms/taskForms';
   import { kindLabel } from './labels';
 
   type Props = {
@@ -66,6 +67,18 @@
   // every keystroke. Snapshotted once (the parent keys this component by node id);
   // a rejected rename keeps the user's typed value so they can fix it.
   let nameInput = $state(untrack(() => name));
+
+  // Kind-specific form, chosen from the registry (DESIGN.md §6) rather than an
+  // inline dispatch. A dedicated form covers only part of its kind — the call
+  // form is HTTP-only, the set form is the object form — so an instance that
+  // doesn't fit falls back to the shared read-only view, exactly as before the
+  // registry. That shape guard is the seam the per-kind audits tighten next
+  // (set first, DESIGN.md §8); everything else is a straight kind lookup.
+  const SelectedForm: TaskFormComponent = $derived.by(() => {
+    if ('call' in task && task.call !== 'http') return fallbackForm;
+    if ('set' in task && !isSetObjectForm(task)) return fallbackForm;
+    return taskForms[kind].component;
+  });
 </script>
 
 <div class="inspector">
@@ -125,22 +138,7 @@
 
   <p class="kind-row">{m.inspector_kind_label()}: {kindLabel(kind)}</p>
 
-  {#if 'call' in task && task.call === 'http'}
-    <CallHttpForm {task} onchange={onpatch} />
-  {:else if 'set' in task && typeof task.set === 'object' && task.set !== null}
-    <SetForm {task} onchange={onpatch} />
-  {:else if 'wait' in task}
-    <WaitForm {task} onchange={onpatch} />
-  {:else if 'for' in task}
-    <ForForm {task} onchange={onpatch} />
-  {:else if 'switch' in task}
-    <SwitchForm {task} {siblingNames} onchange={onpatch} />
-  {:else if 'fork' in task || 'try' in task || 'do' in task}
-    <p class="hint">{m.inspector_subcanvas_hint()}</p>
-  {:else}
-    <p class="hint">{m.inspector_fallback_hint()}</p>
-    <pre>{JSON.stringify(task, null, 2)}</pre>
-  {/if}
+  <SelectedForm {task} {siblingNames} onchange={onpatch} />
 
   <!-- Common TaskBase fields (if/input/output/export/metadata, and `then` as its
        last field), shared by every kind, in addition to the kind form above
@@ -216,15 +214,6 @@
     margin: 0;
     color: #64748b;
     font-size: 0.85rem;
-  }
-
-  pre {
-    margin: 0;
-    padding: 0.5rem;
-    background: #f1f5f9;
-    border-radius: 0.4rem;
-    font-size: 0.75rem;
-    overflow: auto;
   }
 
   :global(.inspector label) {

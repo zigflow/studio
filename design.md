@@ -609,4 +609,69 @@ several decisions above and should guide future ones:
   and any task's own `then`). Avoid parallel, hand-maintained copies of a
   rule that need to be kept in sync by discipline rather than by
   construction.
-- **Prefer decisions that are cheap now and don't f
+- **Prefer decisions that are cheap now and don't foreclose future options.**
+  A smaller, reversible choice today beats a larger, load-bearing one made on a
+  guess about tomorrow's requirements.
+
+---
+
+## 8. Open items
+
+Deliberate, tracked deferrals — choices made knowingly, with the follow-up
+recorded here, rather than gaps left by oversight (§7, "Don't get in the user's
+way").
+
+### Inspector forms
+
+The task-form registry (`taskForms`, §6) gives every task kind a home; kinds
+without a dedicated editor yet point at the shared read-only fallback (a JSON
+view, or the "open the sub-canvas" hint for container kinds). Adding an editor
+is then a one-line swap of that kind's registry entry. Deferred, in intended
+order:
+
+- **`set` — per-entry value-type selector.** The next form to harden. Each
+  `set` entry's value currently round-trips through a heuristic
+  (`parseSetValue`: try JSON, else keep the raw string), so a boolean, number,
+  or object is *inferred* rather than *chosen*. Planned: an explicit per-entry
+  type selector — **string (default), boolean, number, object, array**. For
+  `object`/`array` the value editor will be a **raw JSON textarea**,
+  deliberately *not* a recursive nested type-picker. `set` values are genuinely
+  unbounded JSON, and a fully recursive per-element picker would effectively
+  re-solve the same "generic schema-driven form" problem this project just
+  chose *not* to build at the task level — the per-kind form registry (§6) was
+  picked over a generic renderer — only rescoped to a single field. This does
+  **not** foreclose a nested picker later: a `set` entry's read/write contract
+  is just "key maps to whatever JS value results," so the value-editor
+  implementation is swappable without touching anything else. This is the
+  "audit-then-fix `set`" pass that immediately follows the registry.
+- **`set` — dot-notation keys (post-PoC).** Typing `data.key` to build
+  `{ "data": { "key": … } }` is deferred. Open questions to resolve before it
+  is built:
+  - how an existing/loaded nested `set` value is displayed back — flattened to
+    dot-paths, or fall back to the raw JSON editor;
+  - collision behaviour when a path and its parent are both set (e.g.
+    `data.key` and `data`);
+  - whether the path syntax must support array indices, or object nesting only.
+- **`set` as a whole-value runtime expression.** `set` may be a single
+  `RuntimeExpression` string instead of a key/value map (`SetTask.set:
+  Record | RuntimeExpression`). Only the map form has a dedicated editor; an
+  expression-form `set` falls back to the read-only JSON view, and the
+  inspector guards on the map form so editing can't clobber an expression. A
+  map-vs-expression toggle folds into the `set` audit above.
+- **`call` — non-HTTP variants.** Only `call: http` has a dedicated form
+  (`CallHttpForm`). `call: activity` and `call: grpc` (the `CallTask` union)
+  fall back to the read-only JSON view — routing them through the HTTP form
+  would read `with` fields they don't carry — so the inspector guards on
+  `call === 'http'` and defers dedicated `activity`/`grpc` editors.
+- **`fork`/`try`/`do`, and `raise`/`listen`/`run` — no dedicated form.**
+  Container kinds (`fork`/`try`/`do`) are edited by drilling into their
+  sub-canvas, so their inspector slot shows the sub-canvas hint rather than a
+  form. `raise`/`listen`/`run` have no structured editor yet and show the
+  read-only JSON view.
+
+### i18n retrofit
+
+- Components built before the i18n rule (Canvas, Inspector, TaskNode, page
+  routes) are moved onto Paraglide as they're touched; any residual hardcoded
+  English is tracked here rather than fixed in unrelated passes — see §6,
+  "Internationalisation".
