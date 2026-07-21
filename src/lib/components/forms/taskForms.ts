@@ -17,7 +17,7 @@ import type { TaskKind } from '$lib/graph/model';
 import type { Task } from '$lib/types/zigflow';
 import type { Component } from 'svelte';
 
-import CallHttpForm from './CallHttpForm.svelte';
+import CallForm from './CallForm.svelte';
 import ForForm from './ForForm.svelte';
 import JsonFallbackForm from './JsonFallbackForm.svelte';
 import SetForm from './SetForm.svelte';
@@ -69,7 +69,7 @@ export const fallbackForm: TaskFormComponent =
  * (DESIGN.md §8).
  */
 export const taskForms: Record<TaskKind, TaskFormDefinition> = {
-  call: form(CallHttpForm),
+  call: form(CallForm),
   set: form(SetForm),
   wait: form(WaitForm),
   switch: form(SwitchForm),

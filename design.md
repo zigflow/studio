@@ -509,12 +509,23 @@ customers who need it.
     list of paths + hints rather than click-to-navigate-to-the-exact-field —
     the schema's own error reporting wouldn't reliably support the latter.
     Revisit only if precise error localization becomes a priority.
-- **Inspector forms** — dedicated forms exist for `call`/http, `set` (a
+- **Inspector forms** — dedicated forms exist for `call` (a call-type selector;
+  see below), `set` (a
   key/value form with a per-entry value type — see below), `wait`, `switch`
   (case list with `when`/`then`),
-  and `for`. `fork`/`try` show a pointer to their sub-canvas rather than an
-  inline branch/step editor. A `set` given as a single expression string
-  (the less common form) falls back to the generic JSON editor rather than
+  and `for`. The http form (see the `call` sub-bullet) now surfaces the full
+  `with`: `method`/`endpoint`/`output`/`redirect`/`body`/`headers`/`query`. The
+  write path keeps the `endpoint`'s loaded shape — a
+  bare-string endpoint (URI template or expression) stays a bare string rather
+  than being re-wrapped as `{ uri: … }` (which was pure diff noise), and an
+  object endpoint is spread so only `uri` is overwritten. (The schema's endpoint
+  object allows only `uri` — `unevaluatedProperties: false` — so object-spreading
+  is defensive: it avoids silently discarding any hand-authored extra key,
+  leaving the Save validator to reject it rather than losing it quietly.) See
+  `writeHttpTask` in `forms/callHttpForm.ts`. `fork`/`try` show a pointer to
+  their sub-canvas rather than an inline branch/step editor. A `set` given as
+  a single expression string (the less common form) falls back to the generic
+  JSON editor rather than
   getting its own form — proportionate to how rarely that form is used, not
   a gap to close by default. `raise`/`listen`/`run`/other `call` sub-types
   likewise fall back to a JSON textarea for now — the pattern for adding a
@@ -526,6 +537,40 @@ customers who need it.
   dropdown — editing such a field would coerce it to an in-scope option.
   A documented limitation, revisited only if cross-scope gotos prove common
   in practice.
+  - **`call` form (type selector).** `CallForm` wraps a **Call type** selector
+    (HTTP / gRPC / Activity, default HTTP — matching the palette's new-call
+    default). HTTP renders the dedicated sub-form; gRPC and Activity render the
+    shared read-only JSON fallback until their own forms land (§8). Switching
+    type changes only `call` + `with` (TaskBase preserved), and a
+    component-local per-type `with` cache means switching away and back restores
+    the prior shape rather than discarding it — nothing about the "mode" is
+    persisted on the task. The single http-vs-fallback shape guard lives inside
+    `CallForm` (not duplicated in the inspector's registry dispatch), mirroring
+    WaitForm's self-contained duration/until switch. The HTTP sub-form now edits
+    `method` + `endpoint` plus **`output`** (raw/content/response dropdown; the
+    `content` default is written as omitted), **`redirect`** (checkbox — the
+    schema declares no default, so unchecked omits the property and only checked
+    writes `true`), and **`body`** (a JSON textarea accepting any JSON value;
+    blank omits, invalid JSON keeps the last valid, like the schema fields).
+    `headers`/`query` are edited by a shared name/value map editor
+    (`HttpMapField`, used for both): a plain key/value list (values are always
+    strings — no type selector), empty omits the property, and duplicate keys
+    are last-wins. A whole-value runtime-expression `headers`/`query` has no
+    structured editor — shown read-only (edited in YAML), mirroring `set`'s
+    map-vs-expression split (`isMapField`). The http form is now complete.
+    - **`method` — select of common verbs + "Other".** The HTTP method field is
+      a dropdown of the nine general HTTP methods (`HTTP_METHODS` — a
+      Studio-only convenience constant, cross-referenced to IANA/MDN/Go) plus an
+      **"Other"** option that reveals a free-text input. This is deliberately
+      **not** a schema enum: the schema's `method` stays an unconstrained string,
+      so a free-typed verb can't fail the workflow's own validation (an "Other"
+      escape hatch would contradict a hard enum). Which option shows is inferred
+      **once at load** (`inferMethodOption`: exact match → that option, else
+      "Other" with the raw text in the free-text field) — the same one-time,
+      load-time-only pattern as `inferSetValueType`, never re-inferred mid-edit,
+      with **no persisted mode**; choosing "Other" pre-fills the current value
+      rather than blanking it. Whatever text is in the selected/free-text field
+      is written as `method` verbatim.
   - **`set` per-entry value types.** Each `set` entry carries an **explicit
     value type** — string (default), boolean, number, null, json — chosen in a
     selector beside its key, *not* inferred from the value's text on save. This
@@ -669,11 +714,12 @@ order (the per-entry value-type selector that led this list is **done** — see
   expression-form `set` falls back to the read-only JSON view, and the
   inspector guards on the map form so editing can't clobber an expression. A
   map-vs-expression toggle folds into the `set` audit above.
-- **`call` — non-HTTP variants.** Only `call: http` has a dedicated form
-  (`CallHttpForm`). `call: activity` and `call: grpc` (the `CallTask` union)
-  fall back to the read-only JSON view — routing them through the HTTP form
-  would read `with` fields they don't carry — so the inspector guards on
-  `call === 'http'` and defers dedicated `activity`/`grpc` editors.
+- **`call` — dedicated gRPC/Activity forms.** `CallForm` now hosts all three
+  call types behind a Call type selector (§6), but only HTTP has a real
+  sub-form; `call: grpc` and `call: activity` still render the read-only JSON
+  fallback. Their dedicated forms (grpc: `proto`/`service`/`method`; activity:
+  `name`/`taskQueue`) are deferred — switching to those types today writes an
+  empty `with` that the user completes in YAML or a future form.
 - **`fork`/`try`/`do`, and `raise`/`listen`/`run` — no dedicated form.**
   Container kinds (`fork`/`try`/`do`) are edited by drilling into their
   sub-canvas, so their inspector slot shows the sub-canvas hint rather than a

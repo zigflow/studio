@@ -69,13 +69,12 @@
   let nameInput = $state(untrack(() => name));
 
   // Kind-specific form, chosen from the registry (DESIGN.md §6) rather than an
-  // inline dispatch. A dedicated form covers only part of its kind — the call
-  // form is HTTP-only, the set form is the object form — so an instance that
-  // doesn't fit falls back to the shared read-only view, exactly as before the
-  // registry. That shape guard is the seam the per-kind audits tighten next
-  // (set first, DESIGN.md §8); everything else is a straight kind lookup.
+  // inline dispatch. One kind still needs a shape guard here: `set`'s dedicated
+  // form handles only the object (key/value) form, so a string/expression `set`
+  // falls back to the read-only view. (`call`'s http-vs-fallback split now lives
+  // inside CallForm, which owns all three call types.) Everything else is a
+  // straight kind lookup.
   const SelectedForm: TaskFormComponent = $derived.by(() => {
-    if ('call' in task && task.call !== 'http') return fallbackForm;
     if ('set' in task && !isSetObjectForm(task)) return fallbackForm;
     return taskForms[kind].component;
   });
