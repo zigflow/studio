@@ -16,7 +16,10 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
+import dns from 'node:dns';
 import { defineConfig } from 'vite';
+
+dns.setDefaultResultOrder('verbatim');
 
 export default defineConfig({
   plugins: [
