@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { formatJson, parseJsonField } from '$lib/editor/formValues';
-import { endpointText } from '$lib/editor/subtitle';
-import type { CallHttpTask, Endpoint } from '$lib/types/zigflow';
+import { formatJson, parseJsonField } from '#lib/editor/formValues.js';
+import { endpointText } from '#lib/editor/subtitle.js';
+import type { CallHttpTask, Endpoint } from '#lib/types/zigflow.js';
 
 /**
  * Form ↔ task mapping for `call: http` (DESIGN.md §6), paired with

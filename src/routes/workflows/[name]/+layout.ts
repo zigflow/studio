@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { ZigflowWorkflow } from '$lib/types/zigflow';
+import type { ZigflowWorkflow } from '#lib/types/zigflow.js';
 
 import type { LayoutLoad } from './$types';
 

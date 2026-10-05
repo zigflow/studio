@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { parseJsonField } from '$lib/editor/formValues';
-import type { SetTask } from '$lib/types/zigflow';
+import { parseJsonField } from '#lib/editor/formValues.js';
+import type { SetTask } from '#lib/types/zigflow.js';
 
 /**
  * Form ↔ task mapping for `set` (DESIGN.md §6), paired with `SetForm.svelte`.

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { SwitchCase, SwitchTask } from '$lib/types/zigflow';
+import type { SwitchCase, SwitchTask } from '#lib/types/zigflow.js';
 
 /**
  * Form ↔ task mapping for `switch` (DESIGN.md §6), paired with

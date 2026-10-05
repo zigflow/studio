@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { paraglideMiddleware } from '$lib/paraglide/server';
-import type { Handle } from '@sveltejs/kit';
+import { paraglideMiddleware } from '#lib/paraglide/server.js';
+import type { Handle } from '@sveltejs/kit/hooks';
 
 /**
  * Resolve the request locale per DESIGN.md §6: server-side, from the browser's
@@ -24,10 +24,12 @@ import type { Handle } from '@sveltejs/kit';
  * request-scoped via `AsyncLocalStorage`, so concurrent requests don't leak.
  */
 export const handle: Handle = ({ event, resolve }) =>
-  paraglideMiddleware(event.request, ({ request, locale }) => {
-    event.request = request;
-    return resolve(event, {
+  // `event.request` is readonly in SvelteKit 3, so the middleware's request
+  // clone is not reassigned. With no `url` strategy it carries the same URL as
+  // the original; revisit this if a `url` strategy is ever added.
+  paraglideMiddleware(event.request, ({ locale }) =>
+    resolve(event, {
       transformPageChunk: ({ html }) =>
         html.replace('%paraglide.lang%', locale),
-    });
-  });
+    }),
+  );

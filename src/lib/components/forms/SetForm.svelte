@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { isInvalidJsonField } from '$lib/editor/formValues';
-  import { m } from '$lib/paraglide/messages';
-  import type { SetTask } from '$lib/types/zigflow';
+  import { isInvalidJsonField } from '#lib/editor/formValues.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { SetTask } from '#lib/types/zigflow.js';
   import { untrack } from 'svelte';
 
   import {

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { durationField, parseDurationField } from '$lib/editor/formValues';
-import type { ExpressionDuration, WaitTask } from '$lib/types/zigflow';
+import { durationField, parseDurationField } from '#lib/editor/formValues.js';
+import type { ExpressionDuration, WaitTask } from '#lib/types/zigflow.js';
 
 /**
  * Form ↔ task mapping for `wait` (DESIGN.md §6), paired with `WaitForm.svelte`.

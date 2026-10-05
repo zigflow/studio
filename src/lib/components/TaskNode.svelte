@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { taskSubtitle } from '$lib/editor/subtitle';
-  import type { SubtitleDescriptor } from '$lib/editor/subtitle';
-  import { m } from '$lib/paraglide/messages';
+  import { taskSubtitle } from '#lib/editor/subtitle.js';
+  import type { SubtitleDescriptor } from '#lib/editor/subtitle.js';
+  import { m } from '#lib/paraglide/messages.js';
   import { Handle, Position } from '@xyflow/svelte';
   import { getContext } from 'svelte';
 

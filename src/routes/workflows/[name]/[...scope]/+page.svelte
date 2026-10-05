@@ -1,38 +1,35 @@
 <script lang="ts">
-  import { goto, replaceState } from '$app/navigation';
-  import { resolve } from '$app/paths';
-  import { page } from '$app/state';
-  import Breadcrumb from '$lib/components/Breadcrumb.svelte';
-  import Canvas from '$lib/components/Canvas.svelte';
-  import Inspector from '$lib/components/Inspector.svelte';
-  import NodePalette from '$lib/components/NodePalette.svelte';
-  import WorkflowDetails from '$lib/components/WorkflowDetails.svelte';
+  import Breadcrumb from '#lib/components/Breadcrumb.svelte';
+  import Canvas from '#lib/components/Canvas.svelte';
+  import Inspector from '#lib/components/Inspector.svelte';
+  import NodePalette from '#lib/components/NodePalette.svelte';
+  import WorkflowDetails from '#lib/components/WorkflowDetails.svelte';
   import {
     type CanvasActions,
     DND_TASK_KIND_MIME,
-  } from '$lib/components/canvas';
-  import { applyRename } from '$lib/editor/commands';
-  import type { RenameOutcome } from '$lib/editor/commands';
+  } from '#lib/components/canvas.js';
+  import { applyRename } from '#lib/editor/commands.js';
+  import type { RenameOutcome } from '#lib/editor/commands.js';
   import {
     saveWorkflow,
     serializeWorkflow,
     toSaveErrorDisplays,
-  } from '$lib/editor/save';
-  import type { SaveErrorDisplay } from '$lib/editor/save';
+  } from '#lib/editor/save.js';
+  import type { SaveErrorDisplay } from '#lib/editor/save.js';
   import type {
     FlowNode,
     ScopeField,
     ScopePath,
     TaskKind,
-  } from '$lib/graph/model';
-  import { TASK_KINDS, layoutForScope } from '$lib/graph/model';
+  } from '#lib/graph/model.js';
+  import { TASK_KINDS, layoutForScope } from '#lib/graph/model.js';
   import {
     addTask,
     ensureTaskIds,
     moveTask,
     removeTask,
     updateTaskBody,
-  } from '$lib/graph/mutations';
+  } from '#lib/graph/mutations.js';
   import {
     ScopeResolutionError,
     resolveScope,
@@ -40,10 +37,13 @@
     resolveUrlSegments,
     scopePathToUrlSegments,
     siblingNames,
-  } from '$lib/graph/scope';
-  import { treeToGraph } from '$lib/graph/treeToGraph';
-  import { m } from '$lib/paraglide/messages';
-  import type { Task, TaskList } from '$lib/types/zigflow';
+  } from '#lib/graph/scope.js';
+  import { treeToGraph } from '#lib/graph/treeToGraph.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { Task, TaskList } from '#lib/types/zigflow.js';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { page } from '$app/state';
   import { untrack } from 'svelte';
 
   import type { PageData } from './$types';
@@ -68,6 +68,7 @@
   let savedSnapshot = $state(
     untrack(() => (data.workflow ? serializeWorkflow(data.workflow) : '')),
   );
+
   let saving = $state(false);
   let validationErrors = $state<SaveErrorDisplay[]>([]);
   let saveErrorReason = $state<'network' | 'server' | 'malformed' | null>(null);
@@ -196,6 +197,7 @@
   const selectedFirst = $derived(
     selectedNode != null && selectedNode.index === 0,
   );
+
   const selectedLast = $derived(
     graph != null &&
       selectedNode != null &&
@@ -227,7 +229,7 @@
    * path + base via `page.url`.
    */
   function setSelectedParam(name: string | null) {
-    const url = new URL(page.url);
+    const url = new URL(page.url.href);
     if (name === null) {
       url.searchParams.delete('selected');
     } else {
@@ -235,8 +237,7 @@
     }
     // Query-only shallow update on the current, already-resolved URL (base path
     // preserved via page.url); resolve() targets route paths, not query strings.
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
-    replaceState(url, page.state);
+    goto(url, { shallow: true, replace: true, state: page.state });
   }
 
   /**
@@ -420,6 +421,7 @@
       return false;
     }
     const tag = target.tagName;
+
     return (
       tag === 'INPUT' ||
       tag === 'TEXTAREA' ||
@@ -527,10 +529,7 @@
 </script>
 
 <svelte:window onkeydown={onKeydown} />
-
-<svelte:head>
-  <title>{workflowDisplayName ?? m.app_name()}</title>
-</svelte:head>
+<svelte:head><title>{workflowDisplayName ?? m.app_name()}</title></svelte:head>
 
 <div class="editor">
   <header>

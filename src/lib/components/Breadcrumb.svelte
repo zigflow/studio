@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ScopePath } from '$lib/graph/model';
-  import { m } from '$lib/paraglide/messages';
+  import type { ScopePath } from '#lib/graph/model.js';
+  import { m } from '#lib/paraglide/messages.js';
 
   type Props = {
     path: ScopePath;

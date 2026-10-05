@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { thenOptions } from '$lib/editor/commonFields';
-  import { m } from '$lib/paraglide/messages';
-  import type { SwitchTask } from '$lib/types/zigflow';
+  import { thenOptions } from '#lib/editor/commonFields.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { SwitchTask } from '#lib/types/zigflow.js';
   import { untrack } from 'svelte';
 
   import { readSwitchCases, writeSwitchTask } from './switchForm';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { CallTask } from '$lib/types/zigflow';
+import type { CallTask } from '#lib/types/zigflow.js';
 
 /**
  * The call-wrapper logic for `CallForm.svelte` (DESIGN.md §6). `CallForm` picks a

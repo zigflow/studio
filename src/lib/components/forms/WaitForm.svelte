@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import type { WaitTask } from '$lib/types/zigflow';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { WaitTask } from '#lib/types/zigflow.js';
   import { untrack } from 'svelte';
 
   import { readWaitForm, writeWaitTask } from './waitForm';
