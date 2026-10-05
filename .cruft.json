@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/mrsimonemms/new",
-  "commit": "ce60b7946b6f45bc411f617e9b0efdf88fdeddeb",
+  "commit": "6f9d354501373017c05fcf905450cfb9647ff8bf",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -9,7 +9,7 @@
       "author": "Zigflow authors <https://github.com/zigflow/studio/graphs/contributors>",
       "type": "svelte",
       "_template": "https://github.com/mrsimonemms/new",
-      "_commit": "ce60b7946b6f45bc411f617e9b0efdf88fdeddeb"
+      "_commit": "6f9d354501373017c05fcf905450cfb9647ff8bf"
     }
   },
   "directory": "js",
