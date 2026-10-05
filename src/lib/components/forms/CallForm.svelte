@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import type { CallTask } from '$lib/types/zigflow';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { CallTask } from '#lib/types/zigflow.js';
 
   import CallHttpForm from './CallHttpForm.svelte';
   import JsonFallbackForm from './JsonFallbackForm.svelte';

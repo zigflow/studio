@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { TaskKind } from '$lib/graph/model';
-import type { Task } from '$lib/types/zigflow';
+import type { TaskKind } from '#lib/graph/model.js';
+import type { Task } from '#lib/types/zigflow.js';
 import type { Component } from 'svelte';
 
 import CallForm from './CallForm.svelte';

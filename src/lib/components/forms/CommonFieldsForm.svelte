@@ -5,10 +5,10 @@
     thenOptions,
     writeCommonFields,
     writeThen,
-  } from '$lib/editor/commonFields';
-  import { isInvalidJsonField } from '$lib/editor/formValues';
-  import { m } from '$lib/paraglide/messages';
-  import type { Task } from '$lib/types/zigflow';
+  } from '#lib/editor/commonFields.js';
+  import { isInvalidJsonField } from '#lib/editor/formValues.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { Task } from '#lib/types/zigflow.js';
   import { untrack } from 'svelte';
 
   let {

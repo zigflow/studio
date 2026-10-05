@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { TASK_KINDS } from '$lib/graph/model';
-  import type { TaskKind } from '$lib/graph/model';
-  import { m } from '$lib/paraglide/messages';
+  import { TASK_KINDS } from '#lib/graph/model.js';
+  import type { TaskKind } from '#lib/graph/model.js';
+  import { m } from '#lib/paraglide/messages.js';
 
   import { DND_TASK_KIND_MIME } from './canvas';
   import { kindLabel } from './labels';

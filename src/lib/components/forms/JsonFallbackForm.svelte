@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { isContainerKind } from '$lib/editor/drilldown';
-  import { taskKind } from '$lib/graph/model';
-  import { m } from '$lib/paraglide/messages';
-  import type { Task } from '$lib/types/zigflow';
+  import { isContainerKind } from '#lib/editor/drilldown.js';
+  import { taskKind } from '#lib/graph/model.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { Task } from '#lib/types/zigflow.js';
 
   // Shared inspector fallback for task kinds without a dedicated form
   // (DESIGN.md §6). A container kind (fork/try/do) shows the "open the

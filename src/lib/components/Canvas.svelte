@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import type { FlowGraph } from '$lib/graph/model';
-  import { m } from '$lib/paraglide/messages';
+  import type { FlowGraph } from '#lib/graph/model.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import { browser } from '$app/env';
   import {
     Background,
     Controls,

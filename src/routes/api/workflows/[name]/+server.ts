@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ensureTaskIds, syncWorkflowType } from '$lib/graph/mutations';
-import { validateWorkflow } from '$lib/schema/validate';
-import { workflowStore } from '$lib/server/store';
+import { ensureTaskIds, syncWorkflowType } from '#lib/graph/mutations.js';
+import { validateWorkflow } from '#lib/schema/validate.js';
+import { workflowStore } from '#lib/server/store.js';
 import {
   UnsafeWorkflowNameError,
   WorkflowNotFoundError,
-} from '$lib/server/workflowStore';
-import type { ZigflowWorkflow } from '$lib/types/zigflow';
-import { json } from '@sveltejs/kit';
+} from '#lib/server/workflowStore.js';
+import type { ZigflowWorkflow } from '#lib/types/zigflow.js';
 
 import type { RequestHandler } from './$types';
 
 function badName(err: unknown): Response | null {
   if (err instanceof UnsafeWorkflowNameError) {
-    return json({ message: err.message }, { status: 400 });
+    return Response.json({ message: err.message }, { status: 400 });
   }
   return null;
 }
@@ -45,10 +44,10 @@ export const GET: RequestHandler = async ({ params }) => {
   try {
     const workflow = await workflowStore.load(name);
     ensureTaskIds(workflow);
-    return json(workflow);
+    return Response.json(workflow);
   } catch (err) {
     if (err instanceof WorkflowNotFoundError) {
-      return json({ message: err.message }, { status: 404 });
+      return Response.json({ message: err.message }, { status: 404 });
     }
     const named = badName(err);
     if (named) {
@@ -72,14 +71,14 @@ export const PUT: RequestHandler = async ({ params, request }) => {
   try {
     workflow = await request.json();
   } catch {
-    return json(
+    return Response.json(
       { message: 'Request body must be valid JSON.' },
       { status: 400 },
     );
   }
 
   if (workflow === null || typeof workflow !== 'object') {
-    return json(
+    return Response.json(
       { message: 'Request body must be a workflow object.' },
       { status: 400 },
     );
@@ -90,7 +89,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 
   const result = validateWorkflow(workflow);
   if (!result.valid) {
-    return json(
+    return Response.json(
       { message: 'Workflow failed schema validation.', errors: result.errors },
       { status: 422 },
     );
@@ -105,7 +104,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
     }
     throw err;
   }
-  return json(workflow);
+  return Response.json(workflow);
 };
 
 /** DELETE /api/workflows/[name] — delete a workflow. */
@@ -115,7 +114,7 @@ export const DELETE: RequestHandler = async ({ params }) => {
     await workflowStore.remove(name);
   } catch (err) {
     if (err instanceof WorkflowNotFoundError) {
-      return json({ message: err.message }, { status: 404 });
+      return Response.json({ message: err.message }, { status: 404 });
     }
     const named = badName(err);
     if (named) {

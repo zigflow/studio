@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { ForTask } from '$lib/types/zigflow';
+import type { ForTask } from '#lib/types/zigflow.js';
 
 /**
  * Form ↔ task mapping for `for` (DESIGN.md §6), paired with `ForForm.svelte`.

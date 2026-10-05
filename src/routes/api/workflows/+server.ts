@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ensureTaskIds, syncWorkflowType } from '$lib/graph/mutations';
-import { validateWorkflow } from '$lib/schema/validate';
-import { workflowStore } from '$lib/server/store';
-import { UnsafeWorkflowNameError } from '$lib/server/workflowStore';
-import type { ZigflowWorkflow } from '$lib/types/zigflow';
-import { json } from '@sveltejs/kit';
+import { ensureTaskIds, syncWorkflowType } from '#lib/graph/mutations.js';
+import { validateWorkflow } from '#lib/schema/validate.js';
+import { workflowStore } from '#lib/server/store.js';
+import { UnsafeWorkflowNameError } from '#lib/server/workflowStore.js';
+import type { ZigflowWorkflow } from '#lib/types/zigflow.js';
 
 import type { RequestHandler } from './$types';
 
@@ -44,7 +43,7 @@ export const GET: RequestHandler = async () => {
       }
     }),
   );
-  return json({ workflows });
+  return Response.json({ workflows });
 };
 
 interface CreateBody {
@@ -66,7 +65,7 @@ export const POST: RequestHandler = async ({ request }) => {
   try {
     body = await request.json();
   } catch {
-    return json(
+    return Response.json(
       { message: 'Request body must be valid JSON.' },
       { status: 400 },
     );
@@ -74,7 +73,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const { name } = body;
   if (typeof name !== 'string' || name === '') {
-    return json({ message: 'A workflow "name" is required.' }, { status: 400 });
+    return Response.json(
+      { message: 'A workflow "name" is required.' },
+      { status: 400 },
+    );
   }
 
   const taskQueue = typeof body.taskQueue === 'string' ? body.taskQueue : name;
@@ -86,12 +88,12 @@ export const POST: RequestHandler = async ({ request }) => {
     exists = await workflowStore.exists(name);
   } catch (err) {
     if (err instanceof UnsafeWorkflowNameError) {
-      return json({ message: err.message }, { status: 400 });
+      return Response.json({ message: err.message }, { status: 400 });
     }
     throw err;
   }
   if (exists) {
-    return json(
+    return Response.json(
       { message: `A workflow named "${name}" already exists.` },
       { status: 409 },
     );
@@ -106,12 +108,12 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const result = validateWorkflow(workflow);
   if (!result.valid) {
-    return json(
+    return Response.json(
       { message: 'Workflow failed schema validation.', errors: result.errors },
       { status: 422 },
     );
   }
 
   await workflowStore.save(name, workflow);
-  return json(workflow, { status: 201 });
+  return Response.json(workflow, { status: 201 });
 };

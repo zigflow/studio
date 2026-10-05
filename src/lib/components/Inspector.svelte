@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { RenameOutcome } from '$lib/editor/commands';
-  import { containerField, isContainerKind } from '$lib/editor/drilldown';
-  import type { ScopeField, TaskKind } from '$lib/graph/model';
-  import { m } from '$lib/paraglide/messages';
-  import type { Task } from '$lib/types/zigflow';
+  import type { RenameOutcome } from '#lib/editor/commands.js';
+  import { containerField, isContainerKind } from '#lib/editor/drilldown.js';
+  import type { ScopeField, TaskKind } from '#lib/graph/model.js';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { Task } from '#lib/types/zigflow.js';
   import { untrack } from 'svelte';
 
   import CommonFieldsForm from './forms/CommonFieldsForm.svelte';

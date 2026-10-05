@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { m } from '$lib/paraglide/messages';
-  import type { ZigflowDocumentMeta } from '$lib/types/zigflow';
+  import { m } from '#lib/paraglide/messages.js';
+  import type { ZigflowDocumentMeta } from '#lib/types/zigflow.js';
 
   type Props = {
     /** Routing/directory name — read-only, never a document field (DESIGN.md §6). */
