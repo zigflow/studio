@@ -225,8 +225,8 @@
    * Mirror the current selection into the URL as `?selected=<name>` (or remove it
    * when null), keeping the shareable/refreshable URL in lockstep with
    * `selectedId`. Uses `replaceState` — not `goto`/pushState — so clicking through
-   * nodes doesn't create a back-button entry per click. Preserves the current
-   * path + base via `page.url`.
+   * nodes doesn't create a back-button entry per click. Keeps the current scope
+   * segments and other query params; `resolve` applies the base path.
    */
   function setSelectedParam(name: string | null) {
     const url = new URL(page.url.href);
@@ -235,9 +235,16 @@
     } else {
       url.searchParams.set('selected', name);
     }
-    // Query-only shallow update on the current, already-resolved URL (base path
-    // preserved via page.url); resolve() targets route paths, not query strings.
-    goto(url, { shallow: true, replace: true, state: page.state });
+    const query = url.searchParams.toString();
+    const params = {
+      name: data.name,
+      scope: data.scopeSegments.map(encodeURIComponent).join('/'),
+    };
+    const href =
+      query === ''
+        ? resolve('/workflows/[name]/[...scope]', params)
+        : resolve(`/workflows/[name]/[...scope]?${query}`, params);
+    goto(href, { shallow: true, replace: true, state: page.state });
   }
 
   /**
