@@ -1,0 +1,64 @@
+name: Update Dependencies
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-dependencies
+  cancel-in-progress: false
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
+      - name: Update pre-commit dependencies
+        run: |
+          python -m pip install pre-commit
+          pre-commit autoupdate
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Update npm dependencies
+        run: |
+          npm ci
+          npm update
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.MONTHLY_UPDATE_TOKEN }}
+          commit-message: "chore: update dependencies"
+          title: "chore: update dependencies"
+          body: |
+            Automated dependency refresh.
+
+            - Pre-commit hooks updated via `pre-commit autoupdate`
+            - npm dependencies updated within the ranges in `package.json`
+          branch: chore/update-deps
+          delete-branch: true
+          labels: dependencies
+          signoff: true
+          add-paths: |
+            .pre-commit-config.yaml
+            package.json
+            package-lock.json
